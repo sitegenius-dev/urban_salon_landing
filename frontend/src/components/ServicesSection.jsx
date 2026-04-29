@@ -104,12 +104,19 @@ export default function ServicesSection({ services = [] }) {
 
         {/* ── Detailed service cards grouped by category ── */}
         {services.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {Object.entries(grouped).map(([cat, svcs]) => (
-              <div
-                key={cat}
-                className="border border-gray-100 rounded-xl p-5 hover:border-gold/40 hover:shadow-md transition-all"
-              >
+          // <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          // <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+          //   {Object.entries(grouped).map(([cat, svcs]) => (
+          //     <div
+          //       key={cat}
+          //       className="border border-gray-100 rounded-xl p-5 hover:border-gold/40 hover:shadow-md transition-all"
+          //     >
+          <div className="columns-1 sm:columns-2 gap-5">
+  {Object.entries(grouped).map(([cat, svcs]) => (
+    <div
+      key={cat}
+      className="break-inside-avoid mb-5 border border-gray-100 rounded-xl p-5 hover:border-gold/40 hover:shadow-md transition-all"
+    >
                 <h3 className="text-base font-black text-gray-900 mb-3 pb-2 border-b border-gray-100 uppercase tracking-wide">
                   {cat}
                 </h3>
