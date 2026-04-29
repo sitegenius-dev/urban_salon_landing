@@ -17,13 +17,7 @@ const ADMIN_LINKS = [
   { to: '/admin/reviews',   label: 'Reviews',   icon: Star }
 ];
 
-const DEV_LINKS = [
-  { to: '/developer',          label: 'Dashboard',    icon: LayoutDashboard },
-  { to: '/developer/hero',     label: 'Hero Section', icon: Image },
-  { to: '/developer/services', label: 'Services CMS', icon: Scissors },
-  { to: '/developer/about',    label: 'About Section',icon: FileText },
-  { to: '/developer/contact',  label: 'Contact CMS',  icon: Phone },
-];
+
 
 export default function AdminLayout({ children, panel = 'admin' }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,13 +26,14 @@ export default function AdminLayout({ children, panel = 'admin' }) {
   const navigate  = useNavigate();
 
   const links  = panel === 'developer' ? DEV_LINKS : ADMIN_LINKS;
-  const title  = panel === 'developer' ? 'Developer CMS' : 'Admin Panel';
-  const accent = panel === 'developer' ? '#4f8ef7' : '#D4AF37';
+const isSuperAdmin = user?.role === 'super_admin';
+  const title  = panel === 'developer' ? 'Developer CMS' : isSuperAdmin ? 'Super Admin' : 'Admin Panel';
+  const accent = panel === 'developer' ? '#4f8ef7' : isSuperAdmin ? '#ff6b35' : '#D4AF37';
 
   const handleLogout = () => {
     logout();
     toast.success('Logged out');
-    navigate(panel === 'developer' ? '/developer/login' : '/admin/login');
+    navigate('/admin/login');
   };
 
   const SidebarContent = () => (

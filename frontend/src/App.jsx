@@ -13,13 +13,7 @@ import AdminStaff from './pages/admin/AdminStaff';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReviews from './pages/admin/AdminReviews';
 
-import DeveloperLogin from './pages/developer/DeveloperLogin';
-import DeveloperDashboard from './pages/developer/DeveloperDashboard';
-import DevHero from './pages/developer/DevHero';
-import DevServices from './pages/developer/DevServices';
-import DevAbout from './pages/developer/DevAbout';
-import DevContact from './pages/developer/DevContact';
-
+ 
 export default function App() {
   return (
     <AuthProvider>
@@ -63,24 +57,7 @@ export default function App() {
             <ProtectedRoute role="admin"><AdminReviews /></ProtectedRoute>
           } />
 
-          {/* ── Developer ────────────────────────────────────────────────── */}
-          <Route path="/developer/login" element={<DeveloperLogin />} />
-          <Route path="/developer" element={
-            <ProtectedRoute role="developer"><DeveloperDashboard /></ProtectedRoute>
-          } />
-          <Route path="/developer/hero" element={
-            <ProtectedRoute role="developer"><DevHero /></ProtectedRoute>
-          } />
-          <Route path="/developer/services" element={
-            <ProtectedRoute role="developer"><DevServices /></ProtectedRoute>
-          } />
-          <Route path="/developer/about" element={
-            <ProtectedRoute role="developer"><DevAbout /></ProtectedRoute>
-          } />
-          <Route path="/developer/contact" element={
-            <ProtectedRoute role="developer"><DevContact /></ProtectedRoute>
-          } />
-
+           
           {/* ── Fallback ─────────────────────────────────────────────────── */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -222,10 +222,16 @@ exports.trackBooking = async (req, res, next) => {
  */
 exports.adminGetBookings = async (req, res, next) => {
   try {
+    // const {
+    //   page = 1, limit = 15,
+    //   date, status,
+    //   search, dateFrom, dateTo,
+    // } = req.query;
     const {
       page = 1, limit = 15,
       date, status,
       search, dateFrom, dateTo,
+      staffId,
     } = req.query;
 
     const where = {};
@@ -238,7 +244,8 @@ exports.adminGetBookings = async (req, res, next) => {
       if (dateTo)   where.travelDate[Op.lte] = dateTo;
     }
 
-    if (status) where.bookingStatus = status;
+  if (status)  where.bookingStatus = status;
+if (staffId) where.staffId = staffId;
 
     if (search) {
       where[Op.or] = [
@@ -287,7 +294,8 @@ exports.adminUpdateBooking = async (req, res, next) => {
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
 
     // ✅ upiTransactionId added here so payment confirmation works
-    const allowed = ['bookingStatus', 'paymentStatus', 'adminNote', 'staffId', 'upiTransactionId'];
+    // const allowed = ['bookingStatus', 'paymentStatus', 'adminNote', 'staffId', 'upiTransactionId'];
+    const allowed = ['bookingStatus', 'paymentStatus', 'adminNote', 'staffId', 'upiTransactionId', 'serviceName', 'totalFare'];
     allowed.forEach(k => { if (req.body[k] !== undefined) booking[k] = req.body[k]; });
 
     await booking.save();

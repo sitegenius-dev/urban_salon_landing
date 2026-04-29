@@ -127,7 +127,9 @@ router.get('/track/:bookingId', bookingController.trackBooking);
  *       200:
  *         description: Paginated booking list
  */
-router.get('/admin/all', authenticate, requireRole('admin'), bookingController.adminGetBookings);
+// router.get('/admin/all', authenticate, requireRole('admin'), bookingController.adminGetBookings);
+router.get('/admin/all', authenticate, requireRole('admin', 'super_admin'), bookingController.adminGetBookings);
+router.get('/admin/export', authenticate, requireRole('admin', 'super_admin'), bookingController.exportBookings);
 
 /**
  * @swagger
@@ -186,7 +188,8 @@ router.get('/admin/export', authenticate, requireRole('admin'), bookingControlle
  *       200:
  *         description: Updated booking
  */
-router.put('/admin/:id', authenticate, requireRole('admin'), bookingController.adminUpdateBooking);
+// router.put('/admin/:id', authenticate, requireRole('admin'), bookingController.adminUpdateBooking);
+router.put('/admin/:id', authenticate, requireRole('admin', 'super_admin'), bookingController.adminUpdateBooking);
 
 /**
  * @swagger
@@ -203,7 +206,8 @@ router.put('/admin/:id', authenticate, requireRole('admin'), bookingController.a
  *       200:
  *         description: Deleted
  */
-router.delete('/admin/:id', authenticate, requireRole('admin'), bookingController.adminDeleteBooking);
+// router.delete('/admin/:id', authenticate, requireRole('admin'), bookingController.adminDeleteBooking);
+router.delete('/admin/:id', authenticate, requireRole('admin', 'super_admin'), bookingController.adminDeleteBooking);
 
 // router.put('/confirm-payment/:id', bookingController.confirmPayment);
 router.put('/confirm-payment/new', bookingController.confirmPayment);

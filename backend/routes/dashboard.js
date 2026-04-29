@@ -23,6 +23,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
  *       401:
  *         description: Unauthorized
  */
-router.get('/stats', authenticate, requireRole('admin'), dashboardController.getStats);
+// router.get('/stats', authenticate, requireRole('admin'), dashboardController.getStats);
+router.get('/stats', authenticate, requireRole('admin', 'super_admin'), dashboardController.getStats);
 
 module.exports = router;

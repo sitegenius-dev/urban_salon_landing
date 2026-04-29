@@ -8,12 +8,12 @@ const signToken = (user) =>
 
 /**
  * POST /api/auth/login
- * Roles: admin, developer (public-facing users do not need this endpoint)
+ * Roles: admin (public-facing users do not need this endpoint)
  */
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    console.log(req.body);
+
     const user = await User.findOne({ where: { email: email.toLowerCase().trim() } });
     if (!user || !user.isActive) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });

@@ -36,7 +36,8 @@ router.get('/public', settingController.getPublicSettings);
  *       200:
  *         description: Flat key-value settings object
  */
-router.get('/', authenticate, requireRole('admin'), settingController.adminGetSettings);
+// router.get('/', authenticate, requireRole('admin'), settingController.adminGetSettings); 
+router.get('/', authenticate, requireRole('super_admin', 'admin'), settingController.adminGetSettings);
 
 /**
  * @swagger
@@ -58,11 +59,12 @@ router.get('/', authenticate, requireRole('admin'), settingController.adminGetSe
  *       200:
  *         description: Settings updated
  */
-router.post('/bulk', authenticate, requireRole('admin'), settingController.bulkUpdateSettings);
+// router.post('/bulk', authenticate, requireRole('admin'), settingController.bulkUpdateSettings);
+router.post('/bulk', authenticate, requireRole('super_admin', 'admin'), settingController.bulkUpdateSettings);
 // POST /api/settings/upload-qr  (admin)
-router.post('/upload-qr',
+ router.post('/upload-qr',
   authenticate,
-  requireRole('admin'),
+  requireRole('super_admin', 'admin'),
   upload.single('qrImage'),
   async (req, res, next) => {
     try {
@@ -77,17 +79,35 @@ router.post('/upload-qr',
   }
 );
 
-// POST /api/settings/upload-logo  (admin)
-router.post('/upload-logo',
+// POST /api/settings/upload-hero  (admin)
+router.post('/upload-hero',
   authenticate,
-  requireRole('admin'),
-  upload.single('logo'),
+  requireRole('super_admin', 'admin'),
+  upload.single('heroImage'),
   async (req, res, next) => {
     try {
       if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
       const { Setting } = require('../models');
       const url = `/uploads/${req.file.filename}`;
-      await Setting.upsert({ key: 'site_logo', value: url });
+      await Setting.upsert({ key: 'hero_image', value: url });
+      res.json({ success: true, url });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/settings/upload-about-image (super_admin only)
+router.post('/upload-about-image',
+  authenticate,
+  requireRole('super_admin'),
+  upload.single('aboutImage'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+      const { Setting } = require('../models');
+      const url = `/uploads/${req.file.filename}`;
+      await Setting.upsert({ key: 'about_image', value: url });
       res.json({ success: true, url });
     } catch (err) {
       next(err);

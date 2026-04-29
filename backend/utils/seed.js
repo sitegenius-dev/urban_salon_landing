@@ -24,23 +24,9 @@ const seed = async () => {
       console.log('ℹ️  Admin user already exists');
     }
 
-    const devExists = await User.findOne({ where: { email: 'dev@rootandrise.in' } });
-    if (!devExists) {
-      await User.create({
-        name: 'Developer',
-        email: 'dev@rootandrise.in',
-        password: 'dev123',
-        role: 'developer',
-      });
-      console.log('✅ Developer user created  →  dev@rootandrise.in / dev123');
-    } else {
-      console.log('ℹ️  Developer user already exists');
-    }
-
+    
     // ── Default Settings ──────────────────────────────────────────────────────
     const defaultSettings = [
-      { key: 'site_title',               value: 'Urban Company',                 description: 'Browser and UI title' },
-      { key: 'site_logo',                value: '',                              description: 'Header logo image URL' },
       { key: 'service_name',             value: 'Root & Rise',                    description: 'Salon name' },
       { key: 'hero_tagline',             value: 'Professional Grooming & Beauty', description: 'Hero banner tagline' },
       { key: 'contact_phone',            value: '+91 98765 43210',                description: 'Contact phone' },

@@ -1,4 +1,4 @@
-const { SiteContent, Setting } = require('../models');
+const { SiteContent } = require('../models');
 
 const SECTION_DEFAULTS = {
   hero: {
@@ -32,28 +32,10 @@ const SECTION_DEFAULTS = {
  */
 exports.getAllSections = async (req, res, next) => {
   try {
-    const [rows, settingsRows] = await Promise.all([
-      SiteContent.findAll(),
-      Setting.findAll({ where: { key: ['site_title', 'service_name'] } }),
-    ]);
+    const rows = await SiteContent.findAll();
     const result = {};
     Object.keys(SECTION_DEFAULTS).forEach(s => { result[s] = { ...SECTION_DEFAULTS[s] }; });
     rows.forEach(r => { result[r.section] = r.content; });
-
-    const titleSetting = settingsRows.find((row) => row.key === 'site_title')?.value?.trim()
-      || settingsRows.find((row) => row.key === 'service_name')?.value?.trim()
-      || '';
-
-    if (titleSetting) {
-      const heroTitle = (result.hero?.title || '').trim();
-      if (!heroTitle || heroTitle === SECTION_DEFAULTS.hero.title) {
-        result.hero = {
-          ...result.hero,
-          title: titleSetting,
-        };
-      }
-    }
-
     res.json({ success: true, ...result });
   } catch (err) {
     next(err);

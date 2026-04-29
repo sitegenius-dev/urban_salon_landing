@@ -13,13 +13,13 @@ const { globalErrorHandler, notFound } = require('./middleware/errorHandler');
 // Routes
 const authRoutes        = require('./routes/auth');
 const dashboardRoutes   = require('./routes/dashboard');
-const bookingRoutes     = require('./routes/bookings');
+// const bookingRoutes     = require('./routes/bookings');
 const reviewRoutes = require('./routes/reviews');
 const staffRoutes       = require('./routes/staff');
 const serviceRoutes     = require('./routes/services');
 const settingRoutes     = require('./routes/settings');
 const siteContentRoutes = require('./routes/siteContent');
-
+const bookingRoutes = require('./routes/bookings');
 const app  = express();
 const PORT = process.env.PORT || 5000;
 

@@ -33,9 +33,24 @@ const authenticate = async (req, res, next) => {
  * Require specific roles (varargs)
  * Usage: requireRole('admin'), requireRole('admin', 'developer')
  */
-const requireRole = (...roles) => (req, res, next) => {
+// const requireRole = (...roles) => (req, res, next) => {
+//   if (!req.user) {
+//     return res.status(401).json({ success: false, message: 'Unauthenticated' });
+//   }
+//   if (!roles.includes(req.user.role)) {
+//     return res.status(403).json({
+//       success: false,
+//       message: `Access denied. Required role(s): ${roles.join(', ')}`,
+//     });
+//   }
+//   next();
+// };
+ const requireRole = (...roles) => (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ success: false, message: 'Unauthenticated' });
+  }
+  if (req.user.role === 'super_admin') {
+    return next();
   }
   if (!roles.includes(req.user.role)) {
     return res.status(403).json({
@@ -45,5 +60,4 @@ const requireRole = (...roles) => (req, res, next) => {
   }
   next();
 };
-
 module.exports = { authenticate, requireRole };

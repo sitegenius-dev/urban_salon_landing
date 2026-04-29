@@ -24,4 +24,6 @@ const Setting = sequelize.define('Setting', {
   tableName: 'settings',
 });
 
+
+
 module.exports = Setting;

@@ -134,48 +134,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Recent bookings */}
-        <div className="bg-[#111] border border-white/10 rounded-xl overflow-hidden">
-          <div className="p-5 border-b border-white/10 flex items-center justify-between">
-            <h3 className="text-white font-bold text-sm">Recent Bookings</h3>
-            <a href="/admin/bookings" className="text-gold text-xs hover:underline">View all →</a>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full admin-table">
-              <thead>
-                <tr>
-                  <th>Booking ID</th>
-                  <th>Customer</th>
-                  <th>Service</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(stats?.recentBookings || []).map(b => (
-                  <tr key={b.id} className="text-gray-300">
-                    <td className="text-gold font-mono text-xs">{b.bookingId}</td>
-                    <td>
-                      <div className="font-medium">{b.passengerName}</div>
-                      <div className="text-gray-500 text-xs">{b.passengerPhone}</div>
-                    </td>
-                    <td className="text-sm">{b.serviceName}</td>
-                    <td className="text-sm">
-                      {new Date(b.travelDate + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short' })}
-                      <span className="ml-1 text-gray-500 text-xs">{b.timeSlot}</span>
-                    </td>
-                    <td>
-                      <span className={`badge badge-${b.bookingStatus}`}>{b.bookingStatus}</span>
-                    </td>
-                  </tr>
-                ))}
-                {!stats?.recentBookings?.length && (
-                  <tr><td colSpan={5} className="text-center text-gray-600 py-8">No bookings yet</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        
       </div>
     </AdminLayout>
   );

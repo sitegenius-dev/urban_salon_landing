@@ -116,7 +116,7 @@ export default function BookingTracker() {
   const pt = booking ? (PAY_CONFIG[booking.paymentStatus] || PAY_CONFIG.unpaid) : null;
 
   return (
-    <section className="py-14 bg-[#f0f0f0] px-4">
+    <section className="py-14  px-4">
       <div className="max-w-xl mx-auto">
         <div className="text-center mb-6">
           <p className="text-gold text-xs font-bold tracking-[0.3em] uppercase mb-1">Already Booked?</p>

@@ -13,11 +13,11 @@ import HighlightsSection from '../../components/HighlightsSection';
 import TestimonialsSection from '../../components/TestimonialCard';
 
 export default function LandingPage() {
-  const [content,  setContent]  = useState({});
+  const [content, setContent] = useState({});
   const [services, setServices] = useState([]);
-  const [staff,    setStaff]    = useState([]);
+  const [staff, setStaff] = useState([]);
   const [settings, setSettings] = useState({});
-  const [loading,  setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -30,9 +30,9 @@ export default function LandingPage() {
           api.get('/settings/public'),           // GET /api/settings/public
         ]);
 
-        if (contentRes.status  === 'fulfilled') setContent(contentRes.value.data);
+        if (contentRes.status === 'fulfilled') setContent(contentRes.value.data);
         if (servicesRes.status === 'fulfilled') setServices(servicesRes.value.data.services || []);
-        if (staffRes.status    === 'fulfilled') setStaff(staffRes.value.data.staff || []);
+        if (staffRes.status === 'fulfilled') setStaff(staffRes.value.data.staff || []);
         if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data || {});
       } catch (err) {
         console.error('Failed to load content', err);
@@ -60,17 +60,21 @@ export default function LandingPage() {
     <div className="min-h-screen">
       <Navbar salonName={settings.service_name} />
       <HeroSection hero={content.hero} settings={settings} />
+      {/* <BookingForm services={services} staff={staff} />
+      <BookingTracker />
+      <ServicesSection services={services} /> */}
+      <ServicesSection services={services} />
       <BookingForm services={services} staff={staff} />
       <BookingTracker />
-      <ServicesSection services={services} />
-      <AboutSection about={content.about} />
+      {/* <AboutSection about={content.about} /> */}
+      <AboutSection about={content.about} settings={settings} />
       <HighlightsSection highlights={content.highlights} />
       <TestimonialsSection testimonials={content.testimonials} />
       {/* <ContactSection contact={content.contact} settings={settings} /> */}
       <Footer contact={content.contact} salonName={settings.service_name} />
 
-     
-       
+
+
     </div>
   );
 }

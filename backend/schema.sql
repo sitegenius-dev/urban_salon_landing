@@ -132,7 +132,8 @@ CREATE TABLE IF NOT EXISTS site_content (
 --  Passwords are bcrypt hashes of "admin123"
 INSERT IGNORE INTO users (name, email, password, role) VALUES
   ('Admin',     'admin@rootandrise.in', '$2a$12$Y5yBxOZz7pxk5eSNxGbGvuRkTfKV0FMoHMY/jXiOZC2pWYbBEjf9e', 'admin'),
-  ('Developer', 'dev@rootandrise.in',   '$2a$12$Y5yBxOZz7pxk5eSNxGbGvuRkTfKV0FMoHMY/jXiOZC2pWYbBEjf9e', 'developer');
+   ('Super Admin', 'superadmin@rootandrise.in', '$2a$12$Y5yBxOZz7pxk5eSNxGbGvuRkTfKV0FMoHMY/jXiOZC2pWYbBEjf9e', 'super_admin');
+   
 
 -- ── Seed: settings ────────────────────────────────────────────────────────────
 INSERT IGNORE INTO settings (`key`, value, description) VALUES
