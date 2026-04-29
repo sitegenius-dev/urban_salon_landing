@@ -1,4 +1,4 @@
- import { useState } from 'react';
+import { useState } from 'react';
 import { Clock } from 'lucide-react';
 
 const SERVICE_MENU = [
@@ -58,7 +58,7 @@ export default function ServicesSection({ services = [] }) {
                   {col.category}
                 </div>
                 {/* ✅ Figma sarkhe disc bullet list */}
-                {/* <ul
+        {/* <ul
                   style={{
                     listStyleType: 'disc',
                     paddingLeft: '12px',
@@ -81,7 +81,7 @@ export default function ServicesSection({ services = [] }) {
               </div>
             ))}
           </div>
-        </div> */} 
+        </div> */}
 
         {/* ── Category filter tabs ── */}
         {services.length > 0 && (
@@ -90,11 +90,10 @@ export default function ServicesSection({ services = [] }) {
               <button
                 key={tab}
                 onClick={() => setActive(tab)}
-                className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${
-                  active === tab
+                className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${active === tab
                     ? 'bg-[#0a0a0a] text-gold border-[#0a0a0a]'
                     : 'bg-white text-gray-600 border-gray-200 hover:border-gold hover:text-gold'
-                }`}
+                  }`}
               >
                 {tab}
               </button>
@@ -112,11 +111,11 @@ export default function ServicesSection({ services = [] }) {
           //       className="border border-gray-100 rounded-xl p-5 hover:border-gold/40 hover:shadow-md transition-all"
           //     >
           <div className="columns-1 sm:columns-2 gap-5">
-  {Object.entries(grouped).map(([cat, svcs]) => (
-    <div
-      key={cat}
-      className="break-inside-avoid mb-5 border border-gray-100 rounded-xl p-5 hover:border-gold/40 hover:shadow-md transition-all"
-    >
+            {Object.entries(grouped).map(([cat, svcs]) => (
+              <div
+                key={cat}
+                className="break-inside-avoid mb-5 border border-gray-100 rounded-xl p-5 hover:border-gold/40 hover:shadow-md transition-all"
+              >
                 <h3 className="text-base font-black text-gray-900 mb-3 pb-2 border-b border-gray-100 uppercase tracking-wide">
                   {cat}
                 </h3>
@@ -151,9 +150,9 @@ export default function ServicesSection({ services = [] }) {
           </div>
         )}
 
-        
 
-         
+
+
       </div>
     </section>
   );
