@@ -155,7 +155,7 @@ router.get('/admin/export', authenticate, requireRole('admin', 'super_admin'), b
  *       200:
  *         description: Excel file download
  */
-router.get('/admin/export', authenticate, requireRole('admin'), bookingController.exportBookings);
+// router.get('/admin/export', authenticate, requireRole('admin'), bookingController.exportBookings);
 
 /**
  * @swagger
@@ -213,5 +213,7 @@ router.delete('/admin/:id', authenticate, requireRole('admin', 'super_admin'), b
 router.put('/confirm-payment/new', bookingController.confirmPayment);
 
 router.put('/update-upi/:bookingId', bookingController.updateUpiTransaction);
+router.post('/create-order', bookingController.createRazorpayOrder);
+router.post('/verify-payment', bookingController.verifyRazorpayPayment);
 
 module.exports = router;

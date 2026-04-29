@@ -238,9 +238,9 @@ function ServiceSelector({ services, serviceIds, onChange, error }) {
 export default function BookingForm({ services, staff }) {
   const [step, setStep] = useState('form');
   const [pendingBooking, setPendingBooking] = useState(null);
-  const [upiId, setUpiId] = useState('');
-  const [upiError, setUpiError] = useState('');
-  const [paymentQr, setPaymentQr] = useState('');
+  // const [upiId, setUpiId] = useState('');
+  // const [upiError, setUpiError] = useState('');
+  // const [paymentQr, setPaymentQr] = useState('');
 
   const [form, setForm] = useState({
     passengerName: '',
@@ -261,11 +261,13 @@ export default function BookingForm({ services, staff }) {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [showServicesModal, setShowServicesModal] = useState(false);
 
-  useEffect(() => {
-    api.get('/settings/public')
-      .then(res => { if (res.data?.payment_qr_image) setPaymentQr(res.data.payment_qr_image); })
-      .catch(() => { });
-  }, []);
+
+// for qr payment - to be implemented in future
+  // useEffect(() => {
+  //   api.get('/settings/public')
+  //     .then(res => { if (res.data?.payment_qr_image) setPaymentQr(res.data.payment_qr_image); })
+  //     .catch(() => { });
+  // }, []);
 
   const validate = () => {
     const e = {};
@@ -314,112 +316,225 @@ export default function BookingForm({ services, staff }) {
       setForm(prev => ({ ...prev, timeSlot: '' }));
     }
   };
+// for qr payment - to be implemented in future
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!validate()) return;
+  //   setLoading(true);
+  //   try {
+  //     const payload = {
+  //       passengerName: form.passengerName.trim(),
+  //       passengerPhone: form.passengerPhone.trim(),
+  //       serviceName: form.serviceNames.join(', '),
+  //       travelDate: form.travelDate,
+  //       timeSlot: form.timeSlot,
+  //     };
+  //     if (form.passengerEmail) payload.passengerEmail = form.passengerEmail;
+  //     if (form.serviceIds.length > 0) payload.serviceIds = form.serviceIds.map(Number);
+  //     if (form.serviceIds.length > 0) payload.serviceId = Number(form.serviceIds[0]);
+  //     if (form.staffId) payload.staffId = parseInt(form.staffId);
+  //     if (form.message) payload.message = form.message;
+  //     const res = await api.post('/bookings', payload);
+  //     setPendingBooking(res.data.preview);
+  //     setStep('payment');
+  //   } catch (err) {
+  //     toast.error(err.response?.data?.message || 'Booking failed. Please try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
+
+  // Razorpay integration  
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const payload = {
-        passengerName: form.passengerName.trim(),
-        passengerPhone: form.passengerPhone.trim(),
-        serviceName: form.serviceNames.join(', '),
-        travelDate: form.travelDate,
-        timeSlot: form.timeSlot,
-      };
-      if (form.passengerEmail) payload.passengerEmail = form.passengerEmail;
-      if (form.serviceIds.length > 0) payload.serviceIds = form.serviceIds.map(Number);
-      if (form.serviceIds.length > 0) payload.serviceId = Number(form.serviceIds[0]);
-      if (form.staffId) payload.staffId = parseInt(form.staffId);
-      if (form.message) payload.message = form.message;
-      const res = await api.post('/bookings', payload);
-      setPendingBooking(res.data.preview);
-      setStep('payment');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Booking failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  e.preventDefault();
+  if (!validate()) return;
+  setLoading(true);
 
-  const handlePaymentSubmit = async () => {
-    if (!upiId.trim()) { setUpiError('UPI Transaction ID required'); return; }
-    setLoading(true);
+  try {
+    // STEP 1: Same payload as before — get preview from backend
+    const payload = {
+      passengerName: form.passengerName.trim(),
+      passengerPhone: form.passengerPhone.trim(),
+      serviceName: form.serviceNames.join(', '),
+      travelDate: form.travelDate,
+      timeSlot: form.timeSlot,
+    };
+    if (form.passengerEmail) payload.passengerEmail = form.passengerEmail;
+    if (form.serviceIds.length > 0) payload.serviceIds = form.serviceIds.map(Number);
+    if (form.serviceIds.length > 0) payload.serviceId = Number(form.serviceIds[0]);
+    if (form.staffId) payload.staffId = parseInt(form.staffId);
+    if (form.message) payload.message = form.message;
+
+    const res = await api.post('/bookings', payload);
+    const preview = res.data.preview;
+    setPendingBooking(preview);
+
+    // STEP 2: Create Razorpay order on backend
+    const orderRes = await api.post('/bookings/create-order', {
+      amount: preview.partialPaymentAmount,
+      bookingData: preview,
+    });
+
+    // STEP 3: Open Razorpay popup
+     const options = {
+  key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+  amount: preview.partialPaymentAmount * 100,
+  currency: 'INR',
+  name: 'Your Salon Name',
+  description: preview.serviceName,
+  order_id: orderRes.data.orderId,
+  config: {
+    display: {
+      blocks: {
+        utib: {
+          name: 'Pay via UPI',
+          instruments: [{ method: 'upi' }],
+        },
+      },
+      sequence: ['block.utib'],
+      preferences: { show_default_blocks: true },
+    },
+  },
+  prefill: {
+    name: form.passengerName,
+    contact: form.passengerPhone,
+    email: form.passengerEmail || '',
+  },
+  theme: { color: '#111827' },
+  handler: async (response) => {
     try {
-      const res = await api.put(`/bookings/confirm-payment/new`, {
-        upiTransactionId: upiId.trim(),
-        bookingData: pendingBooking,
+      const verifyRes = await api.post('/bookings/verify-payment', {
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature,
+        bookingData: preview,
       });
-      setSuccess(res.data.booking);
+      setSuccess(verifyRes.data.booking);
       setStep('success');
       toast.success('Booking confirmed!');
-    } catch (err) {
-      toast.error('Could not confirm payment. Try again.');
-    } finally {
-      setLoading(false);
+    } catch {
+      toast.error('Payment done but verification failed. Please call us with your payment ID.');
     }
-  };
+  },
+  modal: {
+    ondismiss: () => {
+      toast('Payment cancelled');
+      setPendingBooking(null);
+    },
+  },
+};
 
-  const resetForm = () => {
-    setSuccess(null); setStep('form'); setPendingBooking(null);
-    setUpiId(''); setUpiError('');
-    setForm({ passengerName: '', passengerPhone: '', passengerEmail: '', gender: 'Male', serviceName: '', serviceIds: [], serviceNames: [], travelDate: '', timeSlot: '', staffId: '', message: '' });
-    setSlots([]);
-  };
+    const rzp = new window.Razorpay(options);
+    rzp.open();
 
-  /* ── PAYMENT STEP ── */
-  if (step === 'payment') {
-    return (
-      <section id="booking" className="bg-white py-12 px-4">
-        <div className="max-w-sm mx-auto">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gray-900 flex items-center justify-center mx-auto mb-3">
-              <span className="text-white text-xl">₹</span>
-            </div>
-            <h3 className="text-xl font-black text-gray-900">Complete Payment</h3>
-            <p className="text-gray-400 text-sm mt-1">Scan & pay the advance to confirm your slot</p>
-          </div>
-
-          {/* QR Card */}
-          <div className="border border-gray-100 rounded-2xl p-5 mb-4 text-center shadow-sm">
-            {paymentQr ? (
-              <img src={`${import.meta.env.VITE_BASE_URL}${paymentQr}`} alt="Payment QR"
-                className="w-44 h-44 mx-auto mb-3 object-contain" />
-            ) : (
-              <div className="w-44 h-44 mx-auto mb-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-300 text-xs">QR not set</div>
-            )}
-            {pendingBooking?.partialPaymentAmount > 0 && (
-              <>
-                <p className="text-xs text-gray-400 uppercase tracking-widest mb-0.5">Advance</p>
-                <p className="text-3xl font-black text-gray-900">₹{parseFloat(pendingBooking.partialPaymentAmount).toFixed(0)}</p>
-              </>
-            )}
-          </div>
-
-          {/* UPI Input */}
-          <div className="mb-4">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">UPI Transaction ID</label>
-            <input
-              value={upiId}
-              onChange={e => { setUpiId(e.target.value); setUpiError(''); }}
-              placeholder="Enter transaction ID after payment"
-              className={inputCls(upiError)}
-            />
-            <Err msg={upiError} />
-          </div>
-
-          <button onClick={handlePaymentSubmit} disabled={loading}
-            className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 transition-opacity">
-            {loading ? 'Confirming…' : 'Confirm Booking →'}
-          </button>
-          <button onClick={resetForm} className="w-full mt-2 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors">
-            ← Cancel & go back
-          </button>
-        </div>
-      </section>
-    );
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Booking failed. Please try again.');
+  } finally {
+    setLoading(false);
   }
+};
+
+// for qr payment - to be implemented in future
+  // const handlePaymentSubmit = async () => {
+  //   if (!upiId.trim()) { setUpiError('UPI Transaction ID required'); return; }
+  //   setLoading(true);
+  //   try {
+  //     const res = await api.put(`/bookings/confirm-payment/new`, {
+  //       upiTransactionId: upiId.trim(),
+  //       bookingData: pendingBooking,
+  //     });
+  //     setSuccess(res.data.booking);
+  //     setStep('success');
+  //     toast.success('Booking confirmed!');
+  //   } catch (err) {
+  //     toast.error('Could not confirm payment. Try again.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // const resetForm = () => {
+  //   setSuccess(null); setStep('form'); setPendingBooking(null);
+  //   setUpiId(''); setUpiError('');
+  //   setForm({ passengerName: '', passengerPhone: '', passengerEmail: '', gender: 'Male', serviceName: '', serviceIds: [], serviceNames: [], travelDate: '', timeSlot: '', staffId: '', message: '' });
+  //   setSlots([]);
+  // };
+
+  /* ── PAYMENT STEP ──  for qr payment*/
+  // if (step === 'payment') {
+  //   return (
+  //     <section id="booking" className="bg-white py-12 px-4">
+  //       <div className="max-w-sm mx-auto">
+  //         {/* Header */}
+  //         <div className="text-center mb-6">
+  //           <div className="w-12 h-12 rounded-2xl bg-gray-900 flex items-center justify-center mx-auto mb-3">
+  //             <span className="text-white text-xl">₹</span>
+  //           </div>
+  //           <h3 className="text-xl font-black text-gray-900">Complete Payment</h3>
+  //           <p className="text-gray-400 text-sm mt-1">Scan & pay the advance to confirm your slot</p>
+  //         </div>
+
+  //         {/* QR Card */}
+  //         <div className="border border-gray-100 rounded-2xl p-5 mb-4 text-center shadow-sm">
+  //           {paymentQr ? (
+  //             <img src={`${import.meta.env.VITE_BASE_URL}${paymentQr}`} alt="Payment QR"
+  //               className="w-44 h-44 mx-auto mb-3 object-contain" />
+  //           ) : (
+  //             <div className="w-44 h-44 mx-auto mb-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-300 text-xs">QR not set</div>
+  //           )}
+  //           {pendingBooking?.partialPaymentAmount > 0 && (
+  //             <>
+  //               <p className="text-xs text-gray-400 uppercase tracking-widest mb-0.5">Advance</p>
+  //               <p className="text-3xl font-black text-gray-900">₹{parseFloat(pendingBooking.partialPaymentAmount).toFixed(0)}</p>
+  //             </>
+  //           )}
+  //         </div>
+
+  //         {/* UPI Input */}
+  //         <div className="mb-4">
+  //           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">UPI Transaction ID</label>
+  //           <input
+  //             value={upiId}
+  //             onChange={e => { setUpiId(e.target.value); setUpiError(''); }}
+  //             placeholder="Enter transaction ID after payment"
+  //             className={inputCls(upiError)}
+  //           />
+  //           <Err msg={upiError} />
+  //         </div>
+
+  //         <button onClick={handlePaymentSubmit} disabled={loading}
+  //           className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 transition-opacity">
+  //           {loading ? 'Confirming…' : 'Confirm Booking →'}
+  //         </button>
+  //         <button onClick={resetForm} className="w-full mt-2 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors">
+  //           ← Cancel & go back
+  //         </button>
+  //       </div>
+  //     </section>
+  //   );
+  // }
+// ✅ CORRECT
+const resetForm = () => {
+  setSuccess(null);
+  setStep('form');
+  setPendingBooking(null);
+  setForm({
+    passengerName: '',
+    passengerPhone: '',
+    passengerEmail: '',
+    gender: 'Male',
+    serviceName: '',
+    serviceIds: [],
+    serviceNames: [],
+    travelDate: '',
+    timeSlot: '',
+    staffId: '',
+    message: '',
+  });
+  setSlots([]);
+};
+
 
   /* ── SUCCESS STEP ── */
   if (step === 'success' || success) {

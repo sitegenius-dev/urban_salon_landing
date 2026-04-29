@@ -4,7 +4,14 @@ const { generateSlots, getBookingCountsByDate } = require('../utils/slotHelper')
 const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
 const XLSX = require('xlsx');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 // Helper: generate human-readable booking ID
 const generateBookingId = async () => {
   const today = new Date();
@@ -59,78 +66,6 @@ exports.getAvailableSlots = async (req, res, next) => {
 
 // ─── PUBLIC ──────────────────────────────────────────────────────────────────
 
-/**
- * POST /api/bookings
- * Public – create a new booking from the landing page
- */
-// exports.createBooking = async (req, res, next) => {
-//   try {
-//     const {
-//       passengerName, passengerPhone, passengerEmail,
-//       gender, serviceName, serviceId,
-//       travelDate, timeSlot, staffId, message,
-//       upiTransactionId,
-//     } = req.body;
-
-//     // Check slot capacity before booking
-//     const staffCount = await Staff.count({ where: { isActive: true } });
-//     const existingCount = await Booking.count({
-//       where: { travelDate, timeSlot, bookingStatus: { [Op.ne]: 'cancelled' } },
-//     });
-//     if (existingCount >= staffCount) {
-//       return res.status(409).json({ success: false, message: 'This time slot is fully booked' });
-//     }
-
-//     // Get pricing from services table if serviceId given, else 0
-//     // let totalFare = 0;
-//     // if (serviceId) {
-//     //   const svc = await Service.findByPk(serviceId);
-//     //   if (svc) totalFare = parseFloat(svc.price);
-//     // }
-//     // Get pricing from services table — support both single serviceId and serviceIds array
-// let totalFare = 0;
-// const ids = req.body.serviceIds && req.body.serviceIds.length > 0
-//   ? req.body.serviceIds
-//   : (serviceId ? [serviceId] : []);
-
-// if (ids.length > 0) {
-//   const svcs = await Service.findAll({ where: { id: ids } });
-//   totalFare = svcs.reduce((sum, svc) => sum + parseFloat(svc.price || 0), 0);
-// }
-
-//     // Get partial payment config
-//     const partialPct = parseFloat(await getSetting('partial_payment_percent', 0));
-//     const partialAmt = parseFloat(((partialPct / 100) * totalFare).toFixed(2));
-//     const remaining  = parseFloat((totalFare - partialAmt).toFixed(2));
-
-//     const bookingId = await generateBookingId();
-
-//     const booking = await Booking.create({
-//       bookingId,
-//       passengerName:        passengerName.trim(),
-//       passengerPhone:       passengerPhone.trim(),
-//       passengerEmail:       passengerEmail || null,
-//       gender:               gender || 'Male',
-//       serviceName:          serviceName || 'General',
-//       serviceId:            serviceId || null,
-//       travelDate,
-//       timeSlot:             timeSlot || null,
-//       staffId:              staffId || null,
-//       message:              message || null,
-//       totalFare,
-//       partialPaymentPercent: partialPct,
-//       partialPaymentAmount:  partialAmt,
-//       remainingAmount:       remaining,
-//       paymentStatus:         partialAmt > 0 ? 'partial' : 'unpaid',
-//       bookingStatus:         'pending',
-//       upiTransactionId:      upiTransactionId || null,
-//     });
-
-//     res.status(201).json({ success: true, booking });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
 exports.createBooking = async (req, res, next) => {
   try {
     const {
@@ -472,6 +407,113 @@ exports.updateUpiTransaction = async (req, res, next) => {
     await booking.save();
 
     res.json({ success: true, message: 'Transaction ID updated successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+// ─── RAZORPAY ────────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/bookings/create-order
+ * Creates a Razorpay order before showing the payment popup
+ * Frontend calls this after form submit, gets orderId back
+ */
+exports.createRazorpayOrder = async (req, res, next) => {
+  try {
+    const { amount } = req.body;
+
+    // amount येतो ₹ मध्ये (e.g. 500)
+    // Razorpay ला paise लागतो (500 * 100 = 50000)
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid amount required' });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100), // ₹ to paise
+      currency: 'INR',
+      receipt: `booking_${Date.now()}`,
+    });
+
+    res.json({ success: true, orderId: order.id });
+  } catch (err) {
+    console.error('Razorpay order error:', err);
+    next(err);
+  }
+};
+
+/**
+ * POST /api/bookings/verify-payment
+ * Called automatically after user completes Razorpay payment
+ * Verifies signature (security check) then saves booking to DB
+ */
+exports.verifyRazorpayPayment = async (req, res, next) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      bookingData,           // same preview object from createBooking
+    } = req.body;
+
+    // ── SECURITY CHECK ──────────────────────────────────────────────
+    // Razorpay signature recreate करा आपल्या secret key ने
+    // जर match झाली = payment genuine आहे
+    // जर match नाही = कोणीतरी tamper केलं, reject करा
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ success: false, message: 'Payment verification failed' });
+    }
+    // ────────────────────────────────────────────────────────────────
+
+    if (!bookingData) {
+      return res.status(400).json({ success: false, message: 'Booking data missing' });
+    }
+
+    // ── SLOT CHECK (same as your confirmPayment function) ────────────
+    const staffCount = await Staff.count({ where: { isActive: true } });
+    const existingCount = await Booking.count({
+      where: {
+        travelDate: bookingData.travelDate,
+        timeSlot: bookingData.timeSlot,
+        bookingStatus: { [Op.ne]: 'cancelled' },
+      },
+    });
+    if (existingCount >= staffCount) {
+      return res.status(409).json({ success: false, message: 'Slot just got full, please pick another time' });
+    }
+    // ────────────────────────────────────────────────────────────────
+
+    // ── SAVE TO DB (same structure as your existing confirmPayment) ──
+    const bookingId = await generateBookingId();
+
+    const booking = await Booking.create({
+      bookingId,
+      passengerName:         bookingData.passengerName,
+      passengerPhone:        bookingData.passengerPhone,
+      passengerEmail:        bookingData.passengerEmail || null,
+      gender:                bookingData.gender || 'Male',
+      serviceName:           bookingData.serviceName || 'General',
+      serviceId:             bookingData.serviceId || null,
+      travelDate:            bookingData.travelDate,
+      timeSlot:              bookingData.timeSlot || null,
+      staffId:               bookingData.staffId || null,
+      message:               bookingData.message || null,
+      totalFare:             bookingData.totalFare || 0,
+      partialPaymentPercent: bookingData.partialPaymentPercent || 0,
+      partialPaymentAmount:  bookingData.partialPaymentAmount || 0,
+      remainingAmount:       bookingData.remainingAmount || 0,
+      upiTransactionId:      razorpay_payment_id, // Razorpay payment ID stores here
+      paymentStatus:         bookingData.partialPaymentAmount > 0 ? 'partial' : 'unpaid',
+      bookingStatus:         'confirmed',           // auto-confirmed since payment verified
+    });
+    // ────────────────────────────────────────────────────────────────
+
+    res.status(201).json({ success: true, booking });
   } catch (err) {
     next(err);
   }
