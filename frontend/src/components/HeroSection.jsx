@@ -5,7 +5,7 @@ export default function HeroSection({ settings = {} }) {
 
   return (
     <section id="home" className="w-full" style={{ marginTop: '56px' }}>
-      <div className="relative w-full" style={{ height: 'calc(100vw * 0.44)' }}>
+      <div className="relative w-full" style={{ height: 'calc(100vw * 0.32)' }}>
         <img
           src={heroImage}
           alt="Professional Salon Service"

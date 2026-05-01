@@ -9,7 +9,7 @@ const SETTING_FIELDS = [
   {
     section: 'Business Info',
     fields: [
-      { key: 'service_name', label: ' Service Name', placeholder: 'Root & Rise', type: 'text' },
+      { key: 'service_name', label: ' Service Name', placeholder: 'Sitegenius', type: 'text' },
       { key: 'owner_name', label: 'Owner Name', placeholder: 'Balam Kumar', type: 'text' },
     ],
   },

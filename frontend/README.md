@@ -1,6 +1,6 @@
-# Root & Rise — Salon Booking Frontend
+# — Salon Booking Frontend
 
-React + Vite frontend for the Root & Rise Salon Booking System.
+React + Vite frontend for  Salon Booking System.
 
 ## Tech Stack
 - **React 19** + **Vite 8**

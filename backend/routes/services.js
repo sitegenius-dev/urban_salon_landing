@@ -5,6 +5,7 @@ const serviceController = require('../controllers/serviceController');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { validate } = require('../middleware/errorHandler');
 
+const upload = require('../middleware/upload');
 /**
  * @swagger
  * tags:
@@ -69,9 +70,21 @@ router.get('/admin/all', authenticate, requireRole('admin'), serviceController.a
  *       201:
  *         description: Service created
  */
+//  router.post(
+//   '/',
+//   authenticate, requireRole('admin'),
+//   upload.single('image'),
+//   [
+//     body('name').trim().notEmpty().withMessage('Name required'),
+//     body('price').isNumeric().withMessage('Valid price required'),
+//   ],
+//   validate,
+//   serviceController.createService
+// );
 router.post(
   '/',
   authenticate, requireRole('admin'),
+  upload.single('image'),
   [
     body('name').trim().notEmpty().withMessage('Name required'),
     body('price').isNumeric().withMessage('Valid price required'),
@@ -112,7 +125,8 @@ router.post(
  *       200:
  *         description: Updated service
  */
-router.put('/:id', authenticate, requireRole('admin'), serviceController.updateService);
+// router.put('/:id', authenticate, requireRole('admin'), serviceController.updateService);
+router.put('/:id', authenticate, requireRole('admin'), upload.single('image'), serviceController.updateService);
 
 /**
  * @swagger

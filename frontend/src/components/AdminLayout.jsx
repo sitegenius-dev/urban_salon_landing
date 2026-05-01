@@ -46,7 +46,7 @@ const isSuperAdmin = user?.role === 'super_admin';
             <span className="text-black font-black text-xs">R</span>
           </div>
           <div className="min-w-0">
-            <div className="text-white font-bold text-sm truncate">Root & Rise</div>
+            <div className="text-white font-bold text-sm truncate">Sitegenius</div>
             <div className="text-xs font-medium truncate" style={{ color: accent }}>{title}</div>
           </div>
         </div>

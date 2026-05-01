@@ -3,6 +3,7 @@ const { validationResult } = require('express-validator');
 /**
  * Run express-validator checks and return 422 if any fail
  */
+
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

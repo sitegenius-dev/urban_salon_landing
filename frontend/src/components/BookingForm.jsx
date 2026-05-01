@@ -1,737 +1,588 @@
-import { useState, useEffect, useRef } from 'react';
+ import { useState } from 'react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import { CheckCircle, Copy, ChevronDown, Info, X, Clock, Scissors } from 'lucide-react';
+import {
+  CheckCircle, Copy, ChevronLeft, Clock,
+  Trash2, ChevronRight, User, Phone, Mail,
+  MessageSquare,
+} from 'lucide-react';
 
-/* ─── tiny helpers ─── */
-const Err = ({ msg }) => msg ? <p className="text-red-400 text-xs mt-1 flex items-center gap-1">⚠ {msg}</p> : null;
+const BASE = import.meta.env.VITE_BASE_URL || '';
 
-const inputCls = (err) =>
-  `w-full bg-white/60 border rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 outline-none transition-all focus:border-gray-400 focus:bg-white focus:shadow-sm ${err ? 'border-red-300' : 'border-gray-200'}`;
-
-/* ─── Service Info Popover ─── */
-function ServiceInfoPopover({ service, onClose }) {
+function ServiceThumb({ src, name }) {
+  const [err, setErr] = useState(false);
+  const hue = [...(name || '')].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  const fullSrc = src ? (src.startsWith('http') ? src : `${BASE}${src}`) : null;
+  if (fullSrc && !err)
+    return <img src={fullSrc} alt={name} onError={() => setErr(true)} className="w-full h-full object-cover" />;
   return (
-    <div className="absolute z-50 left-0 mt-2 w-64 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 text-sm"
-      style={{ top: '100%' }}>
-      <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
-        <X size={14} />
-      </button>
-      <div className="flex items-start gap-2 mb-2">
-        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-          <Scissors size={14} className="text-gray-600" />
-        </div>
-        <div>
-          <p className="font-semibold text-gray-900 leading-tight">{service.name}</p>
-          {service.price > 0 && (
-            <p className="text-gray-500 text-xs">₹{parseFloat(service.price).toFixed(0)}</p>
-          )}
-        </div>
-      </div>
-      {service.description ? (
-        <p className="text-gray-600 text-xs leading-relaxed">{service.description}</p>
-      ) : (
-        <p className="text-gray-400 text-xs italic">No description available.</p>
-      )}
-      {service.duration && (
-        <div className="mt-2 flex items-center gap-1 text-gray-400 text-xs">
-          <Clock size={11} /> {service.duration} min
-        </div>
-      )}
+    <div
+      className="w-full h-full flex items-center justify-center text-white text-xs font-bold"
+      style={{ background: `linear-gradient(135deg,hsl(${hue},55%,58%),hsl(${hue + 45},60%,38%))` }}
+    >
+      {(name || '?').slice(0, 2).toUpperCase()}
     </div>
   );
 }
 
-/* ─── Selected Services Modal ─── */
-function SelectedServicesModal({ services, serviceIds, onRemove, onClose }) {
-  if (serviceIds.length === 0) return null;
+// ── STEP 1: Cart ──────────────────────────────────────────────────────
+function CartStep({ services, cartIds, onRemove, onBack, onNext }) {
+  const items = cartIds.map(id => services.find(s => String(s.id) === String(id))).filter(Boolean);
+  const total = items.reduce((s, svc) => s + parseFloat(svc.price || 0), 0);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <div>
-            <h3 className="text-base font-black text-gray-900">Selected Services</h3>
-            <p className="text-xs text-gray-400">{serviceIds.length} service{serviceIds.length > 1 ? 's' : ''} selected</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors">
-            <X size={15} />
-          </button>
-        </div>
-
-        {/* Services list */}
-        <div className="overflow-y-auto max-h-96 divide-y divide-gray-50 px-5 py-3">
-          {serviceIds.map(id => {
-            const svc = services.find(s => String(s.id) === String(id));
-            if (!svc) return null;
-            return (
-              <div key={id} className="py-4 flex items-start gap-3">
-                {/* Icon */}
-                <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <Scissors size={15} className="text-gray-600" />
-                </div>
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-bold text-gray-900">{svc.name}</p>
-                    {svc.price > 0 && (
-                      <span className="text-sm font-black text-gray-800 flex-shrink-0">₹{parseFloat(svc.price).toFixed(0)}</span>
-                    )}
-                  </div>
-                  {svc.description && (
-                    <p className="text-xs text-gray-500 leading-relaxed mt-1">{svc.description}</p>
-                  )}
-                  {svc.duration && (
-                    <div className="flex items-center gap-1 mt-1.5 text-gray-400 text-xs">
-                      <Clock size={10} /> {svc.duration} min
-                    </div>
-                  )}
-                  {/* Remove */}
-                  <button
-                    type="button"
-                    onClick={() => onRemove(String(svc.id))}
-                    className="mt-2 text-xs text-red-400 hover:text-red-600 transition-colors font-medium"
-                  >
-                    − Remove
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
-          <button onClick={onClose} className="w-full bg-gray-900 text-white py-3 rounded-xl text-sm font-bold">
-            Done ✓
-          </button>
-        </div>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+        <button onClick={onBack} className="p-1.5 rounded-full hover:bg-gray-100">
+          <ChevronLeft size={20} className="text-gray-700" />
+        </button>
+        <h2 className="text-[17px] font-bold text-gray-900">Your Cart</h2>
       </div>
-    </div>
-  );
-}
 
-/* ─── Service Selector Dropdown ─── */
-function ServiceSelector({ services, serviceIds, onChange, error }) {
-  const [open, setOpen] = useState(false);
-  const [activeInfo, setActiveInfo] = useState(null); // service object
-  const ref = useRef(null);
-
-  const categories = services.reduce((acc, svc) => {
-    const cat = svc.category || 'Other';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(svc);
-    return acc;
-  }, {});
-
-  // close on outside click
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setActiveInfo(null); } };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const selectedNames = serviceIds.map(id => {
-    const s = services.find(svc => String(svc.id) === String(id));
-    return s?.name || '';
-  }).filter(Boolean);
-
-  return (
-    <div ref={ref} className="relative">
-      {/* Trigger */}
-      <button
-        type="button"
-        onClick={() => setOpen(p => !p)}
-        className={`w-full flex items-center justify-between rounded-xl px-4 py-3 text-sm border transition-all outline-none ${error ? 'border-red-300' : 'border-gray-200'} ${open ? 'border-gray-400 bg-white shadow-sm' : 'bg-white/60 hover:border-gray-300'}`}
-      >
-        <span className={serviceIds.length === 0 ? 'text-gray-400' : 'text-gray-800 font-medium'}>
-          {serviceIds.length === 0 ? 'Select services' : `${selectedNames.join(', ')}`}
-        </span>
-        <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute z-40 mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
-          <div className="max-h-52 overflow-y-auto divide-y divide-gray-50">
-            {Object.entries(categories).map(([cat, svcs]) => (
-              <div key={cat}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 px-4 pt-3 pb-1">{cat}</p>
-                {svcs.map(s => {
-                  const checked = serviceIds.includes(String(s.id));
-                  const isInfoOpen = activeInfo?.id === s.id;
-                  return (
-                    <div key={s.id} className="relative">
-                      <label className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors hover:bg-gray-50 ${checked ? 'bg-gray-50' : ''}`}>
-                        {/* custom checkbox */}
-                        <span className={`w-4 h-4 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${checked ? 'bg-gray-900 border-gray-900' : 'border-gray-300'}`}>
-                          {checked && <span className="block w-2 h-2 rounded-sm bg-white" />}
-                        </span>
-                        <input
-                          type="checkbox"
-                          name="serviceId"
-                          value={String(s.id)}
-                          checked={checked}
-                          onChange={onChange}
-                          className="sr-only"
-                        />
-                        <span className="flex-1 text-sm text-gray-800">{s.name}</span>
-                        {s.price > 0 && (
-                          <span className="text-xs text-gray-400 font-medium">₹{parseFloat(s.price).toFixed(0)}</span>
-                        )}
-                        {/* Info icon */}
-                        <button
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveInfo(isInfoOpen ? null : s); }}
-                          className={`p-1 rounded-full transition-colors ${isInfoOpen ? 'text-gray-700 bg-gray-100' : 'text-gray-300 hover:text-gray-500'}`}
-                        >
-                          <Info size={13} />
-                        </button>
-                      </label>
-                      {/* Info popover */}
-                      {isInfoOpen && (
-                        <div className="px-4 pb-3">
-                          <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-600 leading-relaxed border border-gray-100">
-                            {s.description || 'No description available for this service.'}
-                            {s.duration && (
-                              <div className="mt-1.5 flex items-center gap-1 text-gray-400">
-                                <Clock size={10} /> {s.duration} min
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-          {/* Footer summary */}
-          {serviceIds.length > 0 && (
-            <div className="border-t border-gray-100 px-4 py-2.5 flex items-center justify-between bg-gray-50">
-              <span className="text-xs text-gray-500">{serviceIds.length} selected</span>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="text-xs font-semibold text-gray-800 hover:text-black"
-              >
-                Done ✓
+      <div className="flex-1 overflow-y-auto px-4 py-2">
+        {items.length === 0 && (
+          <div className="text-center py-16 text-gray-400 text-sm">Your cart is empty</div>
+        )}
+        {items.map(svc => (
+          <div key={svc.id} className="flex items-center gap-3 py-4 border-b border-gray-100">
+            <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
+              <ServiceThumb src={svc.imageUrl} name={svc.name} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">{svc.name}</p>
+              {svc.duration && (
+                <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                  <Clock size={10} /> {svc.duration} min
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <span className="text-sm font-bold text-gray-900">₹{parseFloat(svc.price || 0).toFixed(0)}</span>
+              <button onClick={() => onRemove(String(svc.id))} className="p-1.5 text-gray-300 hover:text-red-400">
+                <Trash2 size={15} />
               </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {items.length > 0 && (
+        <div className="px-4 py-4 border-t border-gray-100">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm text-gray-500">
+              Total ({items.length} service{items.length > 1 ? 's' : ''})
+            </span>
+            <span className="text-[18px] font-black text-gray-900">₹{total.toFixed(0)}</span>
+          </div>
+          <button
+            onClick={onNext}
+            className="w-full bg-black text-white py-4 rounded-2xl text-[15px] font-bold flex items-center justify-center gap-2"
+          >
+            Continue to Schedule <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── STEP 2: Date + Time picker ────────────────────────────────────────
+function ScheduleStep({ onBack, onNext, date, setDate, slot, setSlot, totalDuration }) {
+  const [slots, setSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const today = new Date();
+  const dates = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    return d;
+  });
+
+  const fmt = d => d.toISOString().split('T')[0];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const fetchSlots = async d => {
+    setLoading(true);
+    setSlot('');
+    try {
+      const res = await api.get(`/bookings/available-slots?date=${d}`);
+      setSlots(res.data.slots || []);
+    } catch {
+      toast.error('Could not load slots');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDateSelect = d => {
+    setDate(d);
+    fetchSlots(d);
+  };
+
+  const durationText = totalDuration
+    ? `Service will take approx. ${
+        totalDuration >= 60
+          ? `${Math.floor(totalDuration / 60)} hr${Math.floor(totalDuration / 60) > 1 ? 's' : ''}${
+              totalDuration % 60 ? ` & ${totalDuration % 60} mins` : ''
+            }`
+          : `${totalDuration} mins`
+      }`
+    : '';
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+        <button onClick={onBack} className="p-1.5 rounded-full hover:bg-gray-100">
+          <ChevronLeft size={20} className="text-gray-700" />
+        </button>
+        <div>
+          <h2 className="text-[17px] font-bold text-gray-900">When should we arrive?</h2>
+          {durationText && <p className="text-xs text-gray-400 mt-0.5">{durationText}</p>}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 pt-5 pb-3">
+          <div className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
+            {dates.map(d => {
+              const val = fmt(d);
+              const isSel = date === val;
+              const isToday = fmt(d) === fmt(today);
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => handleDateSelect(val)}
+                  className={`flex-shrink-0 flex flex-col items-center px-3.5 py-3 rounded-2xl border-2 transition-all min-w-[58px] ${
+                    isSel
+                      ? 'border-violet-600 bg-violet-50 text-violet-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  <span className={`text-[11px] font-semibold ${isSel ? 'text-violet-500' : 'text-gray-400'}`}>
+                    {isToday ? 'Today' : dayNames[d.getDay()]}
+                  </span>
+                  <span className="text-[22px] font-black leading-tight">{d.getDate()}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="px-4 pt-2 pb-6">
+          <p className="text-[15px] font-bold text-gray-900 mb-4">Select start time of service</p>
+          {!date && <p className="text-sm text-gray-400 italic">Select a date first</p>}
+          {date && loading && (
+            <div className="flex items-center gap-2 text-gray-400 text-sm py-8 justify-center">
+              <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin" />
+              Loading slots…
+            </div>
+          )}
+          {date && !loading && slots.length === 0 && (
+            <p className="text-sm text-red-400 italic text-center py-8">No slots available for this date</p>
+          )}
+          {date && !loading && slots.length > 0 && (
+            <div className="grid grid-cols-3 gap-2.5">
+              {slots.map(({ slot: s, available }) => {
+                const isFull = available === 0;
+                const isSel = slot === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={isFull}
+                    onClick={() => setSlot(s)}
+                    className={`py-4 px-2 rounded-xl border-2 text-center text-[13px] font-semibold transition-all ${
+                      isFull
+                        ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+                        : isSel
+                        ? 'bg-violet-600 text-white border-violet-600 shadow-md'
+                        : 'bg-white text-gray-800 border-gray-200 hover:border-violet-400 hover:text-violet-600'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      <Err msg={error} />
+      <div className="px-4 py-4 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!date || !slot}
+          className="w-full bg-black text-white py-4 rounded-2xl text-[15px] font-bold flex items-center justify-center gap-2 disabled:opacity-30"
+        >
+          Proceed to checkout <ChevronRight size={18} />
+        </button>
+      </div>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════ */
-/*  MAIN COMPONENT                                                    */
-/* ══════════════════════════════════════════════════════════════════ */
-export default function BookingForm({ services, staff }) {
-  const [step, setStep] = useState('form');
-  const [pendingBooking, setPendingBooking] = useState(null);
-  // const [upiId, setUpiId] = useState('');
-  // const [upiError, setUpiError] = useState('');
-  // const [paymentQr, setPaymentQr] = useState('');
+// ══════════════════════════════════════════════════════════════════════
+// ✅ ROOT FIX: Field is defined HERE — at module level, OUTSIDE DetailsStep.
+//
+// Original bug: Field was defined as a const INSIDE DetailsStep's function
+// body. Every time DetailsStep re-rendered (on every keystroke), React saw
+// a brand-new component type for Field, unmounted the old one, and mounted
+// a fresh one — which instantly blurred the input and lost focus.
+//
+// Moving Field outside means React always sees the same component type,
+// so it updates props in-place without ever unmounting the input.
+// ══════════════════════════════════════════════════════════════════════
+function Field({
+  name, label, icon: Icon, placeholder,
+  type = 'text', optional = false, textarea = false,
+  form, onChange, focused, setFocused, error,
+}) {
+  const isFocused = focused === name;
+  const hasError = !!error;
+  const borderColor = hasError ? '#ef4444' : isFocused ? '#7c3aed' : '#e5e7eb';
 
-  const [form, setForm] = useState({
-    passengerName: '',
-    passengerPhone: '',
-    passengerEmail: '',
-    serviceName: '',
-    serviceIds: [],
-    serviceNames: [],
-    travelDate: '',
-    timeSlot: '',
-    staffId: '',
-    message: '',
-  });
-  const [loading, setLoading] = useState(false);
+  return (
+    <div className="px-5 py-5 border-b border-gray-100">
+      <label htmlFor={name} className="flex items-center gap-2 mb-3 cursor-pointer">
+        <Icon
+          size={14}
+          className={hasError ? 'text-red-400' : isFocused ? 'text-violet-600' : 'text-gray-400'}
+        />
+        <span
+          className={`text-[11px] font-bold uppercase tracking-widest ${
+            hasError ? 'text-red-400' : isFocused ? 'text-violet-600' : 'text-gray-400'
+          }`}
+        >
+          {label}
+        </span>
+        {optional && (
+          <span className="text-[11px] text-gray-300 normal-case font-normal tracking-normal ml-1">
+            (optional)
+          </span>
+        )}
+      </label>
+
+      {textarea ? (
+        <textarea
+          id={name}
+          name={name}
+          value={form[name] || ''}
+          onChange={onChange}
+          onFocus={() => setFocused(name)}
+          onBlur={() => setFocused('')}
+          placeholder={placeholder}
+          rows={3}
+          autoComplete="off"
+          className="w-full text-[15px] text-gray-900 bg-transparent outline-none resize-none border-0 rounded-none px-0 pb-2 placeholder:text-gray-400"
+          style={{
+            borderBottom: `2px solid ${borderColor}`,
+            WebkitAppearance: 'none',
+            appearance: 'none',
+          }}
+        />
+      ) : (
+        <input
+          id={name}
+          name={name}
+          type={type}
+          value={form[name] || ''}
+          onChange={onChange}
+          onFocus={() => setFocused(name)}
+          onBlur={() => setFocused('')}
+          placeholder={placeholder}
+          autoComplete="off"
+          spellCheck="false"
+          className="w-full text-[15px] text-gray-900 bg-transparent outline-none border-0 rounded-none px-0 pb-2 placeholder:text-gray-400"
+          style={{
+            borderBottom: `2px solid ${borderColor}`,
+            WebkitAppearance: 'none',
+            appearance: 'none',
+          }}
+        />
+      )}
+
+      {hasError && (
+        <p style={{ color: '#f87171', fontSize: '11px', marginTop: '6px' }}>⚠ {error}</p>
+      )}
+    </div>
+  );
+}
+
+// ── STEP 3: Details ───────────────────────────────────────────────────
+function DetailsStep({ onBack, onSubmit, loading, form, setForm }) {
   const [errors, setErrors] = useState({});
-  const [success, setSuccess] = useState(null);
-  const [slots, setSlots] = useState([]);
-  const [slotsLoading, setSlotsLoading] = useState(false);
-  const [showServicesModal, setShowServicesModal] = useState(false);
+  const [focused, setFocused] = useState('');
 
-
-// for qr payment - to be implemented in future
-  // useEffect(() => {
-  //   api.get('/settings/public')
-  //     .then(res => { if (res.data?.payment_qr_image) setPaymentQr(res.data.payment_qr_image); })
-  //     .catch(() => { });
-  // }, []);
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setForm(p => ({ ...p, [name]: value }));
+    if (errors[name]) setErrors(p => ({ ...p, [name]: '' }));
+  };
 
   const validate = () => {
     const e = {};
     if (!form.passengerName.trim()) e.passengerName = 'Name is required';
     if (!form.passengerPhone.trim() || form.passengerPhone.replace(/\D/g, '').length < 7)
-      e.passengerPhone = 'Valid phone number required';
-    if (!form.travelDate) e.travelDate = 'Appointment date is required';
-    if (form.serviceIds.length === 0) e.serviceName = 'Please select at least one service';
+      e.passengerPhone = 'Valid phone required';
     if (form.passengerEmail && !/\S+@\S+\.\S+/.test(form.passengerEmail))
-      e.passengerEmail = 'Enter a valid email';
+      e.passengerEmail = 'Enter valid email';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const fetchSlots = async (date) => {
-    setSlotsLoading(true);
-    try {
-      const res = await api.get(`/bookings/available-slots?date=${date}`);
-      setSlots(res.data.slots);
-    } catch {
-      toast.error('Could not load available slots');
-    } finally {
-      setSlotsLoading(false);
-    }
+  const handleSubmit = e => {
+    e.preventDefault();
+    if (validate()) onSubmit(e);
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'serviceId') {
-      const id = value;
-      setForm(prev => {
-        const alreadySelected = prev.serviceIds.includes(id);
-        const newIds = alreadySelected ? prev.serviceIds.filter(x => x !== id) : [...prev.serviceIds, id];
-        const newNames = newIds.map(i => {
-          const svc = services.find(s => String(s.id) === String(i));
-          return svc ? svc.name : '';
-        });
-        return { ...prev, serviceIds: newIds, serviceNames: newNames, serviceName: newNames.join(', ') };
-      });
-    } else {
-      setForm(prev => ({ ...prev, [name]: value }));
-    }
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-    if (name === 'travelDate' && value) {
-      fetchSlots(value);
-      setForm(prev => ({ ...prev, timeSlot: '' }));
-    }
-  };
-// for qr payment - to be implemented in future
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   if (!validate()) return;
-  //   setLoading(true);
-  //   try {
-  //     const payload = {
-  //       passengerName: form.passengerName.trim(),
-  //       passengerPhone: form.passengerPhone.trim(),
-  //       serviceName: form.serviceNames.join(', '),
-  //       travelDate: form.travelDate,
-  //       timeSlot: form.timeSlot,
-  //     };
-  //     if (form.passengerEmail) payload.passengerEmail = form.passengerEmail;
-  //     if (form.serviceIds.length > 0) payload.serviceIds = form.serviceIds.map(Number);
-  //     if (form.serviceIds.length > 0) payload.serviceId = Number(form.serviceIds[0]);
-  //     if (form.staffId) payload.staffId = parseInt(form.staffId);
-  //     if (form.message) payload.message = form.message;
-  //     const res = await api.post('/bookings', payload);
-  //     setPendingBooking(res.data.preview);
-  //     setStep('payment');
-  //   } catch (err) {
-  //     toast.error(err.response?.data?.message || 'Booking failed. Please try again.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const sharedProps = { form, onChange: handleChange, focused, setFocused };
 
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+        <button type="button" onClick={onBack} className="p-1.5 rounded-full hover:bg-gray-100">
+          <ChevronLeft size={20} className="text-gray-700" />
+        </button>
+        <h2 className="text-[17px] font-bold text-gray-900">Your Details</h2>
+      </div>
 
-  // Razorpay integration  
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validate()) return;
-  setLoading(true);
+      <div className="flex-1 overflow-y-auto">
+        <form id="booking-details-form" onSubmit={handleSubmit} noValidate>
+          <Field {...sharedProps} name="passengerName" label="Full Name"  icon={User}           placeholder="Enter your full name"    error={errors.passengerName} />
+          <Field {...sharedProps} name="passengerPhone" label="Phone"     icon={Phone}          placeholder="+91 XXXXX XXXXX" type="tel" error={errors.passengerPhone} />
+          <Field {...sharedProps} name="passengerEmail" label="Email"     icon={Mail}           placeholder="you@email.com" type="email" optional error={errors.passengerEmail} />
+          <Field {...sharedProps} name="message"        label="Note"      icon={MessageSquare}  placeholder="Any special request…" optional textarea error={errors.message} />
+        </form>
+      </div>
 
-  try {
-    // STEP 1: Same payload as before — get preview from backend
-    const payload = {
-      passengerName: form.passengerName.trim(),
-      passengerPhone: form.passengerPhone.trim(),
-      serviceName: form.serviceNames.join(', '),
-      travelDate: form.travelDate,
-      timeSlot: form.timeSlot,
-    };
-    if (form.passengerEmail) payload.passengerEmail = form.passengerEmail;
-    if (form.serviceIds.length > 0) payload.serviceIds = form.serviceIds.map(Number);
-    if (form.serviceIds.length > 0) payload.serviceId = Number(form.serviceIds[0]);
-    if (form.staffId) payload.staffId = parseInt(form.staffId);
-    if (form.message) payload.message = form.message;
+      <div className="border-t border-gray-100">
+        <button
+          type="submit"
+          form="booking-details-form"
+          disabled={loading}
+          className="w-full bg-black text-white py-5 text-[16px] font-bold flex items-center justify-center gap-2 disabled:opacity-50 transition-opacity"
+        >
+          {loading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Processing…
+            </>
+          ) : (
+            <>Proceed to Pay <ChevronRight size={18} /></>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
 
-    const res = await api.post('/bookings', payload);
-    const preview = res.data.preview;
-    setPendingBooking(preview);
+// ── Success Screen ────────────────────────────────────────────────────
+function SuccessScreen({ booking, onDone }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-6 py-12 text-center overflow-y-auto">
+      <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-5">
+        <CheckCircle size={40} className="text-green-500" />
+      </div>
+      <h2 className="text-[22px] font-black text-gray-900 mb-1">Booking Confirmed!</h2>
+      <p className="text-gray-400 text-sm mb-7">We'll contact you shortly to confirm your appointment.</p>
 
-    // STEP 2: Create Razorpay order on backend
-    const orderRes = await api.post('/bookings/create-order', {
-      amount: preview.partialPaymentAmount,
-      bookingData: preview,
-    });
+      <div className="w-full bg-gray-50 rounded-2xl p-4 mb-4">
+        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Booking ID</p>
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-xl font-black text-gray-900 font-mono">{booking.bookingId}</span>
+          <button
+            type="button"
+            onClick={() => { navigator.clipboard.writeText(booking.bookingId); toast.success('Copied!'); }}
+            className="text-gray-400 hover:text-black p-1"
+          >
+            <Copy size={15} />
+          </button>
+        </div>
+      </div>
 
-    // STEP 3: Open Razorpay popup
-     const options = {
-  key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-  amount: preview.partialPaymentAmount * 100,
-  currency: 'INR',
-  name: 'Your Salon Name',
-  description: preview.serviceName,
-  order_id: orderRes.data.orderId,
-  config: {
-    display: {
-      blocks: {
-        utib: {
-          name: 'Pay via UPI',
-          instruments: [{ method: 'upi' }],
-        },
-      },
-      sequence: ['block.utib'],
-      preferences: { show_default_blocks: true },
-    },
-  },
-  prefill: {
-    name: form.passengerName,
-    contact: form.passengerPhone,
-    email: form.passengerEmail || '',
-  },
-  theme: { color: '#111827' },
-  handler: async (response) => {
-    try {
-      const verifyRes = await api.post('/bookings/verify-payment', {
-        razorpay_order_id: response.razorpay_order_id,
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature,
-        bookingData: preview,
-      });
-      setSuccess(verifyRes.data.booking);
-      setStep('success');
-      toast.success('Booking confirmed!');
-    } catch {
-      toast.error('Payment done but verification failed. Please call us with your payment ID.');
-    }
-  },
-  modal: {
-    ondismiss: () => {
-      toast('Payment cancelled');
-      setPendingBooking(null);
-    },
-  },
-};
+      <div className="w-full grid grid-cols-2 gap-2 text-sm text-left mb-6">
+        {[
+          { label: 'Customer', value: booking.passengerName },
+          { label: 'Service', value: booking.serviceName },
+          {
+            label: 'Date',
+            value: new Date(booking.travelDate + 'T00:00:00').toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            }),
+          },
+          { label: 'Time Slot', value: booking.timeSlot },
+        ].map(({ label, value }) => (
+          <div key={label} className="bg-gray-50 rounded-xl p-3">
+            <div className="text-xs text-gray-400 mb-0.5">{label}</div>
+            <div className="font-semibold text-gray-800 text-sm">{value}</div>
+          </div>
+        ))}
+      </div>
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+      <button type="button" onClick={onDone}
+        className="w-full py-4 bg-black text-white rounded-2xl text-[15px] font-bold">
+        Done
+      </button>
+    </div>
+  );
+}
 
-  } catch (err) {
-    toast.error(err.response?.data?.message || 'Booking failed. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-// for qr payment - to be implemented in future
-  // const handlePaymentSubmit = async () => {
-  //   if (!upiId.trim()) { setUpiError('UPI Transaction ID required'); return; }
-  //   setLoading(true);
-  //   try {
-  //     const res = await api.put(`/bookings/confirm-payment/new`, {
-  //       upiTransactionId: upiId.trim(),
-  //       bookingData: pendingBooking,
-  //     });
-  //     setSuccess(res.data.booking);
-  //     setStep('success');
-  //     toast.success('Booking confirmed!');
-  //   } catch (err) {
-  //     toast.error('Could not confirm payment. Try again.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const resetForm = () => {
-  //   setSuccess(null); setStep('form'); setPendingBooking(null);
-  //   setUpiId(''); setUpiError('');
-  //   setForm({ passengerName: '', passengerPhone: '', passengerEmail: '', gender: 'Male', serviceName: '', serviceIds: [], serviceNames: [], travelDate: '', timeSlot: '', staffId: '', message: '' });
-  //   setSlots([]);
-  // };
-
-  /* ── PAYMENT STEP ──  for qr payment*/
-  // if (step === 'payment') {
-  //   return (
-  //     <section id="booking" className="bg-white py-12 px-4">
-  //       <div className="max-w-sm mx-auto">
-  //         {/* Header */}
-  //         <div className="text-center mb-6">
-  //           <div className="w-12 h-12 rounded-2xl bg-gray-900 flex items-center justify-center mx-auto mb-3">
-  //             <span className="text-white text-xl">₹</span>
-  //           </div>
-  //           <h3 className="text-xl font-black text-gray-900">Complete Payment</h3>
-  //           <p className="text-gray-400 text-sm mt-1">Scan & pay the advance to confirm your slot</p>
-  //         </div>
-
-  //         {/* QR Card */}
-  //         <div className="border border-gray-100 rounded-2xl p-5 mb-4 text-center shadow-sm">
-  //           {paymentQr ? (
-  //             <img src={`${import.meta.env.VITE_BASE_URL}${paymentQr}`} alt="Payment QR"
-  //               className="w-44 h-44 mx-auto mb-3 object-contain" />
-  //           ) : (
-  //             <div className="w-44 h-44 mx-auto mb-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-300 text-xs">QR not set</div>
-  //           )}
-  //           {pendingBooking?.partialPaymentAmount > 0 && (
-  //             <>
-  //               <p className="text-xs text-gray-400 uppercase tracking-widest mb-0.5">Advance</p>
-  //               <p className="text-3xl font-black text-gray-900">₹{parseFloat(pendingBooking.partialPaymentAmount).toFixed(0)}</p>
-  //             </>
-  //           )}
-  //         </div>
-
-  //         {/* UPI Input */}
-  //         <div className="mb-4">
-  //           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">UPI Transaction ID</label>
-  //           <input
-  //             value={upiId}
-  //             onChange={e => { setUpiId(e.target.value); setUpiError(''); }}
-  //             placeholder="Enter transaction ID after payment"
-  //             className={inputCls(upiError)}
-  //           />
-  //           <Err msg={upiError} />
-  //         </div>
-
-  //         <button onClick={handlePaymentSubmit} disabled={loading}
-  //           className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 transition-opacity">
-  //           {loading ? 'Confirming…' : 'Confirm Booking →'}
-  //         </button>
-  //         <button onClick={resetForm} className="w-full mt-2 text-sm text-gray-400 hover:text-gray-600 py-2 transition-colors">
-  //           ← Cancel & go back
-  //         </button>
-  //       </div>
-  //     </section>
-  //   );
-  // }
-// ✅ CORRECT
-const resetForm = () => {
-  setSuccess(null);
-  setStep('form');
-  setPendingBooking(null);
-  setForm({
+// ── MAIN ──────────────────────────────────────────────────────────────
+export default function BookingForm({
+  services,
+  preSelectedIds = [],
+  onRemoveFromCart,
+  onClose,
+  isOpen,
+}) {
+  const [step, setStep] = useState('cart');
+  const [date, setDate] = useState('');
+  const [slot, setSlot] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(null);
+  const [form, setForm] = useState({
     passengerName: '',
     passengerPhone: '',
     passengerEmail: '',
-    gender: 'Male',
-    serviceName: '',
-    serviceIds: [],
-    serviceNames: [],
-    travelDate: '',
-    timeSlot: '',
-    staffId: '',
     message: '',
   });
-  setSlots([]);
-};
 
+  const cartItems = preSelectedIds
+    .map(id => services.find(s => String(s.id) === String(id)))
+    .filter(Boolean);
+  const totalDuration = cartItems.reduce((s, svc) => s + (Number(svc.duration) || 0), 0);
 
-  /* ── SUCCESS STEP ── */
-  if (step === 'success' || success) {
-    return (
-      // <section id="booking" className="bg-white py-12 px-4">
-      //   <div className="max-w-sm mx-auto text-center">
-      //     <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-      <section id="booking" className="bg-[#f0f0f0] py-12 px-4">
-        <div className="max-w-sm mx-auto text-center">
-          <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-          <h3 className="text-xl font-black text-gray-900 mb-1">Booking Confirmed!</h3>
-          <p className="text-gray-400 text-sm mb-5">We'll contact you shortly to confirm your appointment.</p>
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const ids = preSelectedIds.map(String);
+      const names = ids
+        .map(id => services.find(s => String(s.id) === id)?.name)
+        .filter(Boolean);
 
-          {/* Booking ID */}
-          <div className="bg-gray-50 rounded-2xl p-4 mb-4">
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Booking ID</p>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-xl font-black text-gray-900 font-mono">{success.bookingId}</span>
-              <button onClick={() => { navigator.clipboard.writeText(success.bookingId); toast.success('Copied!'); }}
-                className="text-gray-400 hover:text-black p-1 transition-colors">
-                <Copy size={15} />
-              </button>
-            </div>
-          </div>
+      const payload = {
+        passengerName: form.passengerName.trim(),
+        passengerPhone: form.passengerPhone.trim(),
+        serviceName: names.join(', '),
+        travelDate: date,
+        timeSlot: slot,
+        serviceIds: ids.map(Number),
+        serviceId: Number(ids[0]),
+      };
+      if (form.passengerEmail) payload.passengerEmail = form.passengerEmail;
+      if (form.message) payload.message = form.message;
 
-          {/* Details grid */}
-          <div className="grid grid-cols-2 gap-2 text-sm text-left mb-4">
-            {[
-              { label: 'Customer', value: success.passengerName },
-              { label: 'Service', value: success.serviceName },
-              { label: 'Date', value: new Date(success.travelDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) },
-              { label: 'Time Slot', value: success.timeSlot },
-              { label: 'Gender', value: success.gender },
-              { label: 'Status', value: success.bookingStatus?.toUpperCase() },
-            ].map(({ label, value }) => (
-              <div key={label} className="bg-gray-50 rounded-xl p-3">
-                <div className="text-xs text-gray-400 mb-0.5">{label}</div>
-                <div className="font-semibold text-gray-800 text-sm">{value}</div>
-              </div>
-            ))}
-          </div>
+      const res = await api.post('/bookings', payload);
+      const preview = res.data.preview;
+      const orderRes = await api.post('/bookings/create-order', {
+        amount: preview.partialPaymentAmount,
+        bookingData: preview,
+      });
 
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-left">
-            <p className="text-amber-800 text-xs font-semibold mb-1">📌 Important</p>
-            <p className="text-amber-700 text-xs leading-relaxed">Track your booking using the <strong>Tracking</strong> option with your Booking ID. You can also update an incorrect UPI Transaction ID from the tracking form.</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: preview.partialPaymentAmount * 100,
+        currency: 'INR',
+        name: 'Your Salon Name',
+        description: preview.serviceName,
+        order_id: orderRes.data.orderId,
+        prefill: {
+          name: form.passengerName,
+          contact: form.passengerPhone,
+          email: form.passengerEmail || '',
+        },
+        theme: { color: '#7c3aed' },
+        handler: async response => {
+          try {
+            const verifyRes = await api.post('/bookings/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              bookingData: preview,
+            });
+            setSuccess(verifyRes.data.booking);
+            setStep('success');
+            toast.success('Booking confirmed!');
+          } catch {
+            toast.error('Payment done but verification failed. Please call us.');
+          }
+        },
+        modal: { ondismiss: () => toast('Payment cancelled') },
+      };
 
-  /* ── BOOKING FORM ── */
+      new window.Razorpay(options).open();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Booking failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDone = () => {
+    setStep('cart');
+    setSuccess(null);
+    setDate('');
+    setSlot('');
+    setForm({ passengerName: '', passengerPhone: '', passengerEmail: '', message: '' });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
   return (
-    // <section id="booking" className="bg-white px-4 pt-8 pb-10">
-    <section id="booking" className="bg-[#f0f0f0] px-4 pt-8 pb-10">
-      <div className="max-w-lg mx-auto">
-        <h2 className="text-2xl font-black text-gray-900 mb-1">Book Appointment</h2>
-        <p className="text-gray-400 text-sm mb-6">Fill in your details to reserve your slot</p>
+    <>
+      <div
+        className="fixed inset-0 bg-black/40"
+        style={{ zIndex: 40, pointerEvents: step === 'cart' ? 'auto' : 'none' }}
+        onClick={step === 'cart' ? onClose : undefined}
+      />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div
+        className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl flex flex-col"
+        style={{ zIndex: 50, maxHeight: '92vh', height: '92vh' }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
 
-          {/* Row 1: Name + Phone */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">Name</label>
-              <input name="passengerName" value={form.passengerName} onChange={handleChange}
-                placeholder="Your name" className={inputCls(errors.passengerName)} />
-              <Err msg={errors.passengerName} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">Phone</label>
-              <input name="passengerPhone" value={form.passengerPhone} onChange={handleChange}
-                placeholder="+91 XXXXX XXXXX" className={inputCls(errors.passengerPhone)} />
-              <Err msg={errors.passengerPhone} />
-            </div>
-          </div>
+        {step === 'cart' && (
+          <CartStep
+            services={services}
+            cartIds={preSelectedIds}
+            onRemove={onRemoveFromCart}
+            onBack={onClose}
+            onNext={() => setStep('schedule')}
+          />
+        )}
 
-          {/* Row 2: Date + Email */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">Date</label>
-              <input name="travelDate" type="date" value={form.travelDate} onChange={handleChange}
-                min={new Date().toISOString().split('T')[0]} className={inputCls(errors.travelDate)} />
-              <Err msg={errors.travelDate} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">Email <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
-              <input name="passengerEmail" value={form.passengerEmail} onChange={handleChange}
-                placeholder="you@email.com" className={inputCls(errors.passengerEmail)} />
-              <Err msg={errors.passengerEmail} />
-            </div>
-          </div>
+        {step === 'schedule' && (
+          <ScheduleStep
+            onBack={() => setStep('cart')}
+            onNext={() => setStep('details')}
+            date={date} setDate={setDate}
+            slot={slot} setSlot={setSlot}
+            totalDuration={totalDuration}
+          />
+        )}
 
-          {/* Time Slots */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">Time Slot</label>
-            {!form.travelDate && (
-              <p className="text-gray-400 text-xs italic py-3">Select a date first to see available slots</p>
-            )}
-            {form.travelDate && slotsLoading && (
-              <div className="flex items-center gap-2 py-3 text-gray-400 text-xs">
-                <div className="w-3.5 h-3.5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                Loading slots…
-              </div>
-            )}
-            {form.travelDate && !slotsLoading && slots.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                {slots.map(({ slot, available }) => {
-                  const isFull = available === 0;
-                  const isSelected = form.timeSlot === slot;
-                  return (
-                    <button key={slot} type="button" disabled={isFull}
-                      onClick={() => setForm(prev => ({ ...prev, timeSlot: slot }))}
-                      className={`py-2 px-1 text-xs font-medium border rounded-xl transition-all text-center
-                        ${isFull ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed line-through'
-                          : isSelected ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}>
-                      <div className="font-semibold">{slot}</div>
-                      <div className={`text-[10px] font-normal mt-0.5 ${isFull ? 'text-gray-300' : isSelected ? 'text-gray-300' : 'text-green-600'}`}>
-                        {isFull ? 'Full' : `${available} left`}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {form.travelDate && !slotsLoading && slots.length === 0 && (
-              <p className="text-red-400 text-xs italic py-2">No slots available for this date</p>
-            )}
-          </div>
+        {step === 'details' && (
+          <DetailsStep
+            onBack={() => setStep('schedule')}
+            onSubmit={handleSubmit}
+            loading={loading}
+            form={form}
+            setForm={setForm}
+          />
+        )}
 
-          {/* Service Selector */}
-          {/* Service Selector */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
-              Services <span className="text-gray-300 normal-case font-normal">(tap ⓘ for details)</span>
-            </label>
-            <ServiceSelector
-              services={services}
-              serviceIds={form.serviceIds}
-              onChange={handleChange}
-              error={errors.serviceName}
-            />
-
-            {/* ── View selected button ── */}
-            {form.serviceIds.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowServicesModal(true)}
-                className="mt-2 flex items-center gap-2 text-xs font-semibold text-gray-700 hover:text-black transition-colors bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full"
-              >
-                <span className="w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px] font-black flex-shrink-0">
-                  {form.serviceIds.length}
-                </span>
-                View selected services & details
-                <span className="ml-auto text-gray-400">→</span>
-              </button>
-            )}
-          </div>
-
-          {/* Modal */}
-          {showServicesModal && (
-            <SelectedServicesModal
-              services={services}
-              serviceIds={form.serviceIds}
-              onRemove={(id) => handleChange({ target: { name: 'serviceId', value: id } })}
-              onClose={() => setShowServicesModal(false)}
-            />
-          )}
-          {/* <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
-              Services <span className="text-gray-300 normal-case font-normal">(tap ⓘ for details)</span>
-            </label>
-            <ServiceSelector
-              services={services}
-              serviceIds={form.serviceIds}
-              onChange={handleChange}
-              error={errors.serviceName}
-            />
-          </div> */}
-
-          {/* Message */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">Message <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
-            <textarea name="message" value={form.message} onChange={handleChange} rows={2}
-              placeholder="Any special request…" className={`${inputCls('message')} resize-none`} />
-          </div>
-
-          <button type="submit" disabled={loading}
-            className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 flex items-center justify-center gap-2 transition-opacity">
-            {loading ? (
-              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing…</>
-            ) : 'Book Appointment →'}
-          </button>
-
-        </form>
+        {step === 'success' && success && (
+          <SuccessScreen booking={success} onDone={handleDone} />
+        )}
       </div>
-    </section>
+    </>
   );
 }

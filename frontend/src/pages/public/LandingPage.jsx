@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+ import { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import Navbar from '../../components/Navbar';
 import HeroSection from '../../components/HeroSection';
@@ -6,9 +6,7 @@ import BookingForm from '../../components/BookingForm';
 import BookingTracker from '../../components/BookingTracker';
 import ServicesSection from '../../components/ServicesSection';
 import AboutSection from '../../components/AboutSection';
-// import ContactSection from '../../components/ContactSection';
 import Footer from '../../components/Footer';
-import { MessageCircle } from 'lucide-react';
 import HighlightsSection from '../../components/HighlightsSection';
 import TestimonialsSection from '../../components/TestimonialCard';
 
@@ -19,17 +17,36 @@ export default function LandingPage() {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // Cart state
+  const [cartIds, setCartIds] = useState([]);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  const addToCart = (id) => {
+    setCartIds(prev => prev.includes(id) ? prev : [...prev, id]);
+  };
+
+  const removeFromCart = (id) => {
+    setCartIds(prev => {
+      const updated = prev.filter(x => x !== id);
+      // If cart becomes empty, close checkout sheet
+      if (updated.length === 0) setCheckoutOpen(false);
+      return updated;
+    });
+  };
+
+  const handleProceedToBook = () => {
+    setCheckoutOpen(true);
+  };
+
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // Fetch all data in parallel using the correct backend APIs
         const [contentRes, servicesRes, staffRes, settingsRes] = await Promise.allSettled([
-          api.get('/site-content/public'),       // GET /api/site-content/public
-          api.get('/services'),                  // GET /api/services  (public active services)
-          api.get('/staff'),                     // GET /api/staff     (public active staff)
-          api.get('/settings/public'),           // GET /api/settings/public
+          api.get('/site-content/public'),
+          api.get('/services'),
+          api.get('/staff'),
+          api.get('/settings/public'),
         ]);
-
         if (contentRes.status === 'fulfilled') setContent(contentRes.value.data);
         if (servicesRes.status === 'fulfilled') setServices(servicesRes.value.data.services || []);
         if (staffRes.status === 'fulfilled') setStaff(staffRes.value.data.staff || []);
@@ -45,36 +62,43 @@ export default function LandingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="spinner mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">Loading...</p>
+          <p className="text-gray-400 text-sm">Loading...</p>
         </div>
       </div>
     );
   }
 
-  const waNumber = (content?.contact?.whatsapp || content?.contact?.phone || '').replace(/\D/g, '');
-
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       <Navbar salonName={settings.service_name} />
       <HeroSection hero={content.hero} settings={settings} />
-      {/* <BookingForm services={services} staff={staff} />
+
+      <ServicesSection
+        services={services}
+        selectedIds={cartIds}
+        onAdd={addToCart}
+        onRemove={removeFromCart}
+        onProceedToBook={handleProceedToBook}
+      />
+
+      {/* UC-style bottom sheet checkout */}
+      <BookingForm
+        services={services}
+        staff={staff}
+        preSelectedIds={cartIds}
+        onRemoveFromCart={removeFromCart}
+        isOpen={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+      />
+
       <BookingTracker />
-      <ServicesSection services={services} /> */}
-      <ServicesSection services={services} />
-      <BookingForm services={services} staff={staff} />
-      <BookingTracker />
-      {/* <AboutSection about={content.about} /> */}
       <AboutSection about={content.about} settings={settings} />
       <HighlightsSection highlights={content.highlights} />
       <TestimonialsSection testimonials={content.testimonials} />
-      {/* <ContactSection contact={content.contact} settings={settings} /> */}
       <Footer contact={content.contact} salonName={settings.service_name} />
-
-
-
     </div>
   );
 }
