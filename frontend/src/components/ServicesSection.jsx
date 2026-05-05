@@ -1,4 +1,4 @@
-import { useState } from 'react';
+ import { useState } from 'react';
 import { Clock, ChevronRight, ShoppingBag, Trash2, X, CheckCircle, Star } from 'lucide-react';
 
 const BASE = import.meta.env.VITE_BASE_URL || '';
@@ -400,7 +400,7 @@ export default function ServicesSection({
   }, 0);
 
   return (
-    <section id="services" className="bg-white min-h-screen"
+    <section id="services" className="bg-white"
       style={{ paddingBottom: totalCount > 0 ? '88px' : '40px' }}>
 
       {/* ── Mobile: horizontal scrollable category tabs ── */}

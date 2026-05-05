@@ -25,7 +25,8 @@ export default function AdminLayout({ children, panel = 'admin' }) {
   const location = useLocation();
   const navigate  = useNavigate();
 
-  const links  = panel === 'developer' ? DEV_LINKS : ADMIN_LINKS;
+  // const links  = panel === 'developer' ? DEV_LINKS : ADMIN_LINKS;
+  const links = ADMIN_LINKS;
 const isSuperAdmin = user?.role === 'super_admin';
   const title  = panel === 'developer' ? 'Developer CMS' : isSuperAdmin ? 'Super Admin' : 'Admin Panel';
   const accent = panel === 'developer' ? '#4f8ef7' : isSuperAdmin ? '#ff6b35' : '#D4AF37';
@@ -41,14 +42,18 @@ const isSuperAdmin = user?.role === 'super_admin';
       {/* Logo */}
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: accent }}>
-            <span className="text-black font-black text-xs">R</span>
-          </div>
-          <div className="min-w-0">
-            <div className="text-white font-bold text-sm truncate">Sitegenius</div>
-            <div className="text-xs font-medium truncate" style={{ color: accent }}>{title}</div>
-          </div>
+           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+  style={{ background: accent }}>
+  <span className="text-black font-black text-xs">
+    {user?.name?.charAt(0)?.toUpperCase() || 'A'}
+  </span>
+</div>
+<div className="min-w-0">
+  <div className="text-white font-bold text-sm truncate">
+    {user?.name || 'Admin'}
+  </div>
+  <div className="text-xs font-medium truncate" style={{ color: accent }}>{title}</div>
+</div>
         </div>
       </div>
 
