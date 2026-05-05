@@ -96,7 +96,8 @@ export default function HighlightsSection() {
       <div className={[
         "grid mx-auto max-w-5xl",
         // mobile: 2 cols, tablet: 3 cols, desktop: 5 cols
-        "grid-cols-2 md:grid-cols-3 lg:grid-cols-5",
+        // "grid-cols-2 md:grid-cols-3 lg:grid-cols-5",
+        "grid-cols-2 md:grid-cols-5 lg:grid-cols-5",
       ].join(" ")}>
         {data.map((item, i) => (
           <CounterItem key={item.id} {...item} started={started} index={i} total={data.length} />

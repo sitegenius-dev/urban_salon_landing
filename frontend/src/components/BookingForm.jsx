@@ -540,11 +540,17 @@ export default function BookingForm({
         onClick={step === 'cart' ? onClose : undefined}
       />
 
-      <div
+      {/* <div
         className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl flex flex-col"
         style={{ zIndex: 50, maxHeight: '92vh', height: '92vh' }}
         onClick={e => e.stopPropagation()}
-      >
+      > */}
+      <div
+  className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl flex flex-col"
+  // style={{ zIndex: 50, maxHeight: '92dvh', height: '92dvh' }}
+  style={{ zIndex: 50, maxHeight: '92dvh', height: '92dvh' }}
+  onClick={e => e.stopPropagation()}
+>
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
