@@ -1378,10 +1378,15 @@ export default function BookingForm({ services, preSelectedIds = [], onRemoveFro
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40" style={{ zIndex: 40 }} onClick={step === 'checkout' ? onClose : undefined} />
       <div
-        className="fixed inset-x-0 bottom-0 bg-white flex flex-col"
-        style={{ zIndex: 50, maxHeight: '92dvh', height: '92dvh', borderRadius: '20px 20px 0 0' }}
+        className="fixed inset-0 bg-black/40"
+        style={{ zIndex: 40, pointerEvents: step === 'cart' ? 'auto' : 'none' }}
+        onClick={step === 'cart' ? onClose : undefined}
+      />
+
+      <div
+        className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl flex flex-col"
+        style={{ zIndex: 50, maxHeight: '92vh', height: '92vh' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
