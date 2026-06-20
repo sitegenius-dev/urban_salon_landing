@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 //  import { useState } from 'react';
 // import { Clock, ChevronRight, ShoppingBag, Trash2, X, CheckCircle, Star } from 'lucide-react';
 
@@ -499,9 +498,6 @@
 
 
 import { useState, useRef, useEffect } from 'react';
-=======
- import { useState } from 'react';
->>>>>>> 897a519c537697c1c6f964ad7aa887dd9df06a29
 import { Clock, ChevronRight, ShoppingBag, Trash2, X, CheckCircle, Star } from 'lucide-react';
 
 const BASE = import.meta.env.VITE_BASE_URL || '';
@@ -886,11 +882,7 @@ export default function ServicesSection({
   };
 
   return (
-<<<<<<< HEAD
     <section id="services" className="bg-white mt-6 md:mt-10"
-=======
-    <section id="services" className="bg-white"
->>>>>>> 897a519c537697c1c6f964ad7aa887dd9df06a29
       style={{ paddingBottom: totalCount > 0 ? '88px' : '40px' }}>
 
       {/* ── Mobile: horizontal scrollable category tabs ── */}
