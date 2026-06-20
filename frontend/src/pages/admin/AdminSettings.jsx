@@ -65,9 +65,15 @@ export default function AdminSettings() {
   const [qrFile, setQrFile] = useState(null);
   const [qrPreview, setQrPreview] = useState(null);
   const [qrUploading, setQrUploading] = useState(false);
+  // const [heroFile, setHeroFile] = useState(null);
+  // const [heroPreview, setHeroPreview] = useState(null);
+  // const [heroUploading, setHeroUploading] = useState(false);
   const [heroFile, setHeroFile] = useState(null);
   const [heroPreview, setHeroPreview] = useState(null);
   const [heroUploading, setHeroUploading] = useState(false);
+  const [heroMobileFile, setHeroMobileFile] = useState(null);
+  const [heroMobilePreview, setHeroMobilePreview] = useState(null);
+  const [heroMobileUploading, setHeroMobileUploading] = useState(false);
   const [aboutFile, setAboutFile] = useState(null);
   const [aboutPreview, setAboutPreview] = useState(null);
   // const [aboutUploading, setAboutUploading] = useState(false);
@@ -76,7 +82,10 @@ export default function AdminSettings() {
   const [aboutDesc, setAboutDesc] = useState('');
   const [aboutSaving, setAboutSaving] = useState(false);
   const fileInputRef = useRef();
+  // const heroFileInputRef = useRef();
+  // const aboutFileInputRef = useRef();
   const heroFileInputRef = useRef();
+  const heroMobileFileInputRef = useRef();
   const aboutFileInputRef = useRef();
 
   useEffect(() => {
@@ -91,8 +100,14 @@ export default function AdminSettings() {
         if (data.payment_qr_image) {
           setQrPreview(`${import.meta.env.VITE_BASE_URL}${data.payment_qr_image}`);
         }
+        // if (data.hero_image) {
+        //   setHeroPreview(`${import.meta.env.VITE_BASE_URL}${data.hero_image}`);
+        // }
         if (data.hero_image) {
           setHeroPreview(`${import.meta.env.VITE_BASE_URL}${data.hero_image}`);
+        }
+        if (data.hero_mobile_image) {
+          setHeroMobilePreview(`${import.meta.env.VITE_BASE_URL}${data.hero_mobile_image}`);
         }
         if (data.about_image) {
           setAboutPreview(`${import.meta.env.VITE_BASE_URL}${data.about_image}`);
@@ -179,6 +194,31 @@ export default function AdminSettings() {
       setAboutUploading(false);
     }
   };
+
+  const handleHeroMobileFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setHeroMobileFile(file);
+    setHeroMobilePreview(URL.createObjectURL(file));
+  };
+
+  const handleHeroMobileUpload = async () => {
+    if (!heroMobileFile) { toast.error('Please select an image first'); return; }
+    setHeroMobileUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('heroMobileImage', heroMobileFile);
+      const res = await api.post('/settings/upload-hero-mobile', formData);
+      setHeroMobilePreview(`${import.meta.env.VITE_BASE_URL}${res.data.url}`);
+      setHeroMobileFile(null);
+      toast.success('Mobile hero image updated!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Upload failed');
+    } finally {
+      setHeroMobileUploading(false);
+    }
+  };
+  
   const handleHeroUpload = async () => {
     if (!heroFile) { toast.error('Please select an image first'); return; }
     setHeroUploading(true);
@@ -451,6 +491,63 @@ export default function AdminSettings() {
                     </button>
                     <p className="text-gray-600 text-xs">
                       Supported: JPG, PNG, WebP. Recommended: landscape ratio (e.g. 1200×530)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Mobile Hero Image Upload ──────────────────────────────────────── */}
+              <div className="bg-[#111] border border-white/10 rounded-2xl p-5">
+                <h3 className="text-gold text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Upload size={14} /> Hero Banner — Mobile Image
+                </h3>
+                <p className="text-gray-500 text-sm mb-4">
+                 Mobile Image for the hero banner. This image will be shown to users accessing the site from mobile devices. It is recommended to use a portrait-oriented image for better display on mobile screens.
+                </p>
+                <div className="flex items-start gap-5">
+                  <div
+                    className="w-28 h-40 border border-white/10 rounded-xl flex items-center justify-center bg-[#0a0a0a] overflow-hidden flex-shrink-0 cursor-pointer"
+                    onClick={() => heroMobileFileInputRef.current?.click()}
+                  >
+                    {heroMobilePreview ? (
+                      <img src={heroMobilePreview} alt="Mobile Hero" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center text-gray-600">
+                        <Upload size={24} className="mx-auto mb-1" />
+                        <p className="text-xs">No image</p>
+                        <p className="text-[10px] mt-0.5">Mobile</p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <input
+                      ref={heroMobileFileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleHeroMobileFileChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => heroMobileFileInputRef.current?.click()}
+                      className="w-full border border-white/10 rounded-xl py-2.5 px-4 text-sm text-gray-300 hover:border-gold/50 hover:text-gold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Upload size={14} />
+                      {heroMobileFile ? heroMobileFile.name : 'Select Mobile Image'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleHeroMobileUpload}
+                      disabled={!heroMobileFile || heroMobileUploading}
+                      className="w-full bg-gold text-black rounded-xl py-2.5 px-4 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40"
+                    >
+                      {heroMobileUploading
+                        ? <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        : <Upload size={14} />}
+                      {heroMobileUploading ? 'Uploading...' : 'Upload Mobile Image'}
+                    </button>
+                    <p className="text-gray-600 text-xs">
+                      Supported: JPG, PNG, WebP. Recommended: portrait ratio (e.g. 600×900).
                     </p>
                   </div>
                 </div>

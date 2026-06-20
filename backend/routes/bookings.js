@@ -213,7 +213,10 @@ router.delete('/admin/:id', authenticate, requireRole('admin', 'super_admin'), b
 router.put('/confirm-payment/new', bookingController.confirmPayment);
 
 router.put('/update-upi/:bookingId', bookingController.updateUpiTransaction);
+ 
+router.put('/update-upi/:bookingId', bookingController.updateUpiTransaction);
 router.post('/create-order', bookingController.createRazorpayOrder);
 router.post('/verify-payment', bookingController.verifyRazorpayPayment);
 
 module.exports = router;
+ 

@@ -11,10 +11,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// api.interceptors.response.use(
+//   (res) => res,
+//   (err) => {
+//     if (err.response?.status === 401) {
+//       const path = window.location.pathname;
+//       if (path.startsWith('/admin') || path.startsWith('/developer')) {
+//         localStorage.removeItem('salon_token');
+//         localStorage.removeItem('salon_user');
+//         window.location.href = path.startsWith('/admin') ? '/admin/login' : '/developer/login';
+//       }
+//     }
+//     return Promise.reject(err);
+//   }
+// );
+// AFTER:
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const url = err.config?.url || '';
+    const isPaymentRoute = url.includes('create-order') || url.includes('verify-payment');
+
+    if (err.response?.status === 401 && !isPaymentRoute) {
       const path = window.location.pathname;
       if (path.startsWith('/admin') || path.startsWith('/developer')) {
         localStorage.removeItem('salon_token');

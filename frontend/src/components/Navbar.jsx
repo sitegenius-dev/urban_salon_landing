@@ -8,7 +8,7 @@ export default function Navbar({ salonName }) {
   const links = [
     { label: 'HOME',     href: '#home' },
     { label: 'SERVICES', href: '#services' },
-    { label: 'BOOK',     href: '#booking' },
+      { label: 'TRACK', href: '#tracking' },
     { label: 'ABOUT',    href: '#about' },
     { label: 'CONTACT',  href: '#contact' },
   ];

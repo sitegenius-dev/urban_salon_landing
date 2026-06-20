@@ -4,12 +4,22 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content=" urban company clenaing & services " />
-     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <title>Urban Company</title>
+    <meta name="description" content="Urban Company - Professional cleaning and home services in your city" />
+    <meta name="robots" content="index, follow" />
+    <title>Urban Company - Cleaning & Home Services</title>
+
+    <!-- Preconnect fonts first (unblocks LCP) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- Only load 3 weights instead of 6 — saves ~20KB legacy JS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Preload LCP image so browser discovers it early -->
+    <link rel="preload" as="image" href="/images/Banner.jpeg" fetchpriority="high" />
+
+    <!-- Razorpay deferred — was render-blocking, saves ~460ms -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
   </head>
   <body>
     <div id="root"></div>

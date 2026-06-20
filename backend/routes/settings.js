@@ -97,6 +97,25 @@ router.post('/upload-hero',
   }
 );
 
+
+// POST /api/settings/upload-hero-mobile  (super_admin only)
+router.post('/upload-hero-mobile',
+  authenticate,
+  requireRole('super_admin'),
+  upload.single('heroMobileImage'),
+  async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+      const { Setting } = require('../models');
+      const url = `/uploads/${req.file.filename}`;
+      await Setting.upsert({ key: 'hero_mobile_image', value: url });
+      res.json({ success: true, url });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // POST /api/settings/upload-about-image (super_admin only)
 router.post('/upload-about-image',
   authenticate,
