@@ -3,8 +3,12 @@ const path = require('path');
 const fs = require('fs');
 
 // Save to public_html/uploads so files persist across restarts
+// const uploadDir = process.env.UPLOAD_DIR
+//   ? process.env.UPLOAD_DIR
+//   : path.join(__dirname, '..', 'uploads');
+
 const uploadDir = process.env.UPLOAD_DIR
-  ? process.env.UPLOAD_DIR
+  ? path.resolve(__dirname, '..', process.env.UPLOAD_DIR)
   : path.join(__dirname, '..', 'uploads');
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });

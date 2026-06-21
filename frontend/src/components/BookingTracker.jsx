@@ -232,7 +232,7 @@ export default function BookingTracker() {
               </button> */}
               <div className="px-5 pb-5 space-y-3">
                 {/* Update Transaction ID Section */}
-                <UpiUpdateSection bookingId={booking.bookingId} bookingDbId={booking.id} />
+                {/* <UpiUpdateSection bookingId={booking.bookingId} bookingDbId={booking.id} /> */}
 
                 <button onClick={reset}
                   className="w-full py-2.5 border border-gray-200 rounded-xl text-gray-500 text-sm hover:border-gold hover:text-gold transition-colors font-medium">

@@ -119,12 +119,20 @@ export default function Navbar({ salonName }) {
       />
 
       {/* Mobile slide-in panel */}
+      {/* <div
+        className={`fixed top-0 left-0 z-[110] h-full w-[260px] bg-white shadow-xl flex flex-col pt-6 px-8 transition-transform duration-300 ease-in-out sm:hidden ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        role="dialog"
+        aria-modal="true"
+      > */}
       <div
         className={`fixed top-0 left-0 z-[110] h-full w-[260px] bg-white shadow-xl flex flex-col pt-6 px-8 transition-transform duration-300 ease-in-out sm:hidden ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         role="dialog"
         aria-modal="true"
+        aria-label="Mobile navigation menu"
       >
         <button onClick={() => setOpen(false)} className="mb-8 text-gray-800 self-start" aria-label="Close menu">
           <X size={22} />

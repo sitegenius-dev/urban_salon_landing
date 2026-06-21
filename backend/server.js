@@ -93,8 +93,11 @@ app.use(express.urlencoded({ extended: true }));
 // app.use('/uploads', express.static(path.join(__dirname, process.env.UPLOAD_DIR || 'uploads')));
 // app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, 'uploads')));
 // Static uploads — 30 day cache for user images
-app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, 'uploads'), {
-  maxAge: '30d',
+// app.use('/uploads', express.static(process.env.UPLOAD_DIR || path.join(__dirname, 'uploads'), {
+  
+app.use('/uploads', express.static(
+  process.env.UPLOAD_DIR ? path.resolve(__dirname, process.env.UPLOAD_DIR) : path.join(__dirname, 'uploads'), {
+maxAge: '30d',
   etag: true,
   lastModified: true,
   setHeaders: (res, filePath) => {

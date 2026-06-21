@@ -627,10 +627,19 @@ function CartPanel({ services, selectedIds, onRemove, onProceedToBook }) {
             <span className="text-sm font-bold">View Cart</span>
           </button>
         </div>
+      // ) : (
+      //   <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl bg-white py-8">
+      //     <ShoppingBag size={22} className="text-gray-200 mb-1" />
+      //     <p className="text-xs text-gray-400">No services added</p>
+      //   </div>
+      // )}
       ) : (
-        <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl bg-white py-8">
-          <ShoppingBag size={22} className="text-gray-200 mb-1" />
-          <p className="text-xs text-gray-400">No services added</p>
+        <div className="flex flex-col items-center justify-center border-2 border-dashed border-violet-100 rounded-xl bg-violet-50/40 py-9 px-4 text-center">
+          <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center mb-3">
+            <ShoppingBag size={20} className="text-violet-400" />
+          </div>
+          <p className="text-sm font-bold text-gray-700">Your cart is empty</p>
+          <p className="text-xs text-gray-400 mt-1">Pick a service to get started ✨</p>
         </div>
       )}
     </div>

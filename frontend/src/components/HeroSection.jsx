@@ -54,7 +54,8 @@ export default function HeroSection({ settings = {} }) {
     <section id="home" className="w-full" style={{ marginTop: '56px' }}>
 
       {/* ── MOBILE ── */}
-      <div className="block md:hidden w-full">
+      {/* ── MOBILE ── */}
+      {/* <div className="block md:hidden w-full">
         <picture>
           <source
             srcSet={mobileImage.replace(/\.(jpg|jpeg|png)$/i, '.webp')}
@@ -64,11 +65,20 @@ export default function HeroSection({ settings = {} }) {
             src={mobileImage}
             alt="Professional Salon Service"
             className="w-full h-auto block"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
           />
         </picture>
-      </div>
+      </div> */}
+      <div className="block md:hidden w-full">
+  <img
+    src={mobileImage}
+    alt="Professional Salon Service"
+    className="w-full h-auto block"
+    fetchPriority="high"
+    decoding="async"
+  />
+</div>
 
       {/* ── DESKTOP ── */}
       <div className="hidden md:block relative w-full">
@@ -81,7 +91,7 @@ export default function HeroSection({ settings = {} }) {
             src={desktopImage}
             alt="Professional Salon Service"
             className="w-full h-auto block"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
           />
         </picture>
