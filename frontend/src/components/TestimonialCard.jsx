@@ -48,7 +48,8 @@ export default function TestimonialsSection() {
   if (loading) return null;
 
   return (
-    <section className="py-12 sm:py-16 px-4 bg-white">
+    // <section className="py-12 sm:py-16 px-4 bg-white">
+    <section id="reviews" className="py-12 sm:py-16 px-4 bg-white">
       <div className="max-w-5xl mx-auto">
 
         {/* Heading */}

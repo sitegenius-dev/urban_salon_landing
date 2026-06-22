@@ -24,7 +24,7 @@ export default function AboutSection({ about, settings }) {
   ].filter(Boolean);
 
   return (
-    <section id="about" className="bg-[#f0f0f0] py-16 px-4">
+    <section id="about" className=" py-16 px-4">
       <div className="max-w-5xl mx-auto">
 
         {/* ── Top: Text left, Image right ── */}

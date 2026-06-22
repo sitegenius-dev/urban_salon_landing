@@ -1,51 +1,86 @@
  import { useState, useEffect } from 'react';
-import { MoreVertical, X, User } from 'lucide-react';
+// import { MoreVertical, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 export default function Navbar({ salonName }) {
   const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
 
-  const links = [
-    { label: 'HOME',     href: '#home' },
-    { label: 'SERVICES', href: '#services' },
-      { label: 'TRACK', href: '#tracking' },
-    { label: 'ABOUT',    href: '#about' },
-    { label: 'CONTACT',  href: '#contact' },
-  ];
+ const links = [
+  { label: 'HOME', href: '#home' },
+  { label: 'SERVICES', href: '#services' },
+  { label: 'TRACK', href: '#tracking' },
+  { label: 'ABOUT', href: '#about' },
+  { label: 'REVIEWS', href: '#reviews' },
+  { label: 'CONTACT', href: '#contact' },
+];
 
-  // Track which section is in view
-  useEffect(() => {
-    const sectionIds = links.map(l => l.href.slice(1));
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter(e => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible.length > 0) {
-          setActiveSection(visible[0].target.id);
-        }
-      },
-      {
-        rootMargin: '-20% 0px -60% 0px',
-        threshold: [0, 0.25, 0.5, 0.75, 1],
+ 
+
+
+// useEffect(() => {
+//   const handleScroll = () => {
+//     const scrollPos = window.scrollY + 200;
+
+//     let current = 'home';
+
+//     links.forEach((link) => {
+//       const section = document.getElementById(
+//         link.href.replace('#', '')
+//       );
+
+//       if (section && scrollPos >= section.offsetTop) {
+//         current = section.id;
+//       }
+//     });
+
+//     setActiveSection(current);
+//   };
+
+//   window.addEventListener('scroll', handleScroll);
+//   handleScroll();
+
+//   return () => {
+//     window.removeEventListener('scroll', handleScroll);
+//   };
+// }, []);
+
+
+useEffect(() => {
+  const handleScroll = () => {
+
+    // Bottom of page = Contact active
+    if (
+      window.innerHeight + window.scrollY >=
+      document.documentElement.scrollHeight - 20
+    ) {
+      setActiveSection('contact');
+      return;
+    }
+
+    const scrollPos = window.scrollY + 200;
+
+    let current = 'home';
+
+    links.forEach((link) => {
+      const section = document.getElementById(
+        link.href.replace('#', '')
+      );
+
+      if (section && scrollPos >= section.offsetTop) {
+        current = section.id;
       }
-    );
-
-    sectionIds.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
     });
 
-    return () => observer.disconnect();
-  }, []);
+    setActiveSection(current);
+  };
 
-  // Close menu on scroll
-  useEffect(() => {
-    const handleScroll = () => { if (open) setOpen(false); };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [open]);
+  window.addEventListener('scroll', handleScroll);
+  handleScroll();
+
+  return () => window.removeEventListener('scroll', handleScroll);
+}, []);
 
   // Smooth scroll handler with navbar offset
   const handleLinkClick = (e, href) => {
@@ -68,25 +103,36 @@ export default function Navbar({ salonName }) {
   return (
     <>
       {/* Top Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 h-[56px] flex items-center px-4">
-        <button onClick={() => setOpen(true)} className="p-1 text-gray-800" aria-label="Open menu">
-          <MoreVertical size={22} />
-        </button>
+       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-100 h-[56px] flex items-center px-4">
+  {/* <div className="flex-1 flex justify-center items-center gap-2"> */}
+  <div className="flex items-center gap-2 mx-auto">
+    <div className="w-8 h-8 bg-black rounded flex items-center justify-center flex-shrink-0">
+      <span className="text-white text-xs font-bold tracking-tight">
+        {initials}
+      </span>
+    </div>
 
-        <div className="flex-1 flex justify-center items-center gap-2">
-          <div className="w-8 h-8 bg-black rounded flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold tracking-tight">{initials}</span>
-          </div>
-          <div className="text-left leading-tight">
-            <div className="text-[11px] font-semibold text-gray-900">{line1}</div>
-            {line2 && <div className="text-[11px] font-semibold text-gray-900">{line2}</div>}
-          </div>
+    <div className="text-left leading-tight">
+      <div className="text-[11px] font-semibold text-gray-900">
+        {line1}
+      </div>
+      {line2 && (
+        <div className="text-[11px] font-semibold text-gray-900">
+          {line2}
         </div>
+      )}
+    </div>
+  </div>
 
-        <button className="p-1 text-gray-800" aria-label="Profile">
-          <User size={22} />
-        </button>
-      </nav>
+  {/* Mobile Hamburger */}
+  <button
+    onClick={() => setOpen(true)}
+    className="p-1 text-gray-800 sm:hidden"
+    aria-label="Open menu"
+  >
+    <Menu size={24} />
+  </button>
+</nav>
 
       {/* Desktop secondary nav bar — visible on sm+ */}
       <div className="fixed top-[56px] left-0 right-0 z-40 bg-white border-b border-gray-100 hidden sm:flex justify-center gap-6 px-6">
